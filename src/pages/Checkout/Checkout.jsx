@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useOrders } from '../../context/OrderContext';
+import { useTranslation } from '../../hooks/useTranslation';
 import Button from '../../components/Button/Button';
 import { formatPrice } from '../../data/products';
 import './Checkout.css';
@@ -10,6 +11,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { cart, getTotalPrice, clearCart } = useCart();
   const { addOrder } = useOrders();
+  const { t, formatCurrency } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
@@ -46,24 +48,24 @@ const Checkout = () => {
   const validateShippingInfo = () => {
     const errors = {};
     
-    if (!shippingInfo.fullName.trim()) errors.fullName = 'Full name is required';
+    if (!shippingInfo.fullName.trim()) errors.fullName = t('validation.required');
     if (!shippingInfo.email.trim()) {
-      errors.email = 'Email is required';
+      errors.email = t('validation.emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(shippingInfo.email)) {
-      errors.email = 'Email is invalid';
+      errors.email = t('validation.emailInvalid');
     }
     if (!shippingInfo.phone.trim()) {
-      errors.phone = 'Phone number is required';
+      errors.phone = t('validation.required');
     } else if (!/^[0-9]{10,13}$/.test(shippingInfo.phone.replace(/[-\s]/g, ''))) {
-      errors.phone = 'Phone number must be 10-13 digits';
+      errors.phone = t('validation.invalidPhone');
     }
-    if (!shippingInfo.address.trim()) errors.address = 'Address is required';
-    if (!shippingInfo.city.trim()) errors.city = 'City is required';
-    if (!shippingInfo.province.trim()) errors.province = 'Province is required';
+    if (!shippingInfo.address.trim()) errors.address = t('validation.required');
+    if (!shippingInfo.city.trim()) errors.city = t('validation.required');
+    if (!shippingInfo.province.trim()) errors.province = t('validation.required');
     if (!shippingInfo.postalCode.trim()) {
-      errors.postalCode = 'Postal code is required';
+      errors.postalCode = t('validation.required');
     } else if (!/^[0-9]{5}$/.test(shippingInfo.postalCode)) {
-      errors.postalCode = 'Postal code must be 5 digits';
+      errors.postalCode = 'Kode pos harus 5 digit';
     }
 
     setFormErrors(errors);
@@ -96,7 +98,7 @@ const Checkout = () => {
       if (paymentMethod) {
         setCurrentStep(3);
       } else {
-        alert('Please select a payment method');
+        alert(t('checkout.selectPaymentMethod') || 'Mohon pilih metode pembayaran');
       }
     }
   };
@@ -133,12 +135,12 @@ const Checkout = () => {
   // Helper function for payment method names
   const getPaymentMethodName = (method) => {
     const methods = {
-      'bank-transfer': 'Bank Transfer',
-      'credit-card': 'Credit/Debit Card',
-      'gopay': 'GoPay',
-      'ovo': 'OVO',
-      'dana': 'DANA',
-      'cod': 'Cash on Delivery'
+      'bank-transfer': t('checkout.bankTransfer'),
+      'credit-card': t('checkout.creditCard'),
+      'gopay': t('checkout.gopay'),
+      'ovo': t('checkout.ovo'),
+      'dana': t('checkout.dana'),
+      'cod': t('checkout.cod')
     };
     return methods[method] || method;
   };
@@ -187,41 +189,41 @@ const Checkout = () => {
         <div className="container">
           <div className="order-confirmation">
             <div className="confirmation-icon">✓</div>
-            <h1>Order Confirmed!</h1>
+            <h1>{t('checkout.orderSuccess')}</h1>
             <p className="confirmation-message">
-              Thank you for your purchase. Your order has been received.
+              {t('checkout.thankYou')}
             </p>
             
             <div className="order-details-box">
               <div className="order-detail-row">
-                <span>Order Number:</span>
+                <span>{t('checkout.orderNumber')}:</span>
                 <strong>{orderNumber}</strong>
               </div>
               <div className="order-detail-row">
-                <span>Order Total:</span>
-                <strong>{formatPrice(total)}</strong>
+                <span>{t('cart.total')}:</span>
+                <strong>{formatCurrency(total)}</strong>
               </div>
               <div className="order-detail-row">
-                <span>Payment Method:</span>
+                <span>{t('checkout.paymentMethod')}:</span>
                 <strong>{getPaymentMethodName(paymentMethod)}</strong>
               </div>
               <div className="order-detail-row">
-                <span>Estimated Delivery:</span>
-                <strong>3-5 Business Days</strong>
+                <span>Estimasi Pengiriman:</span>
+                <strong>3-5 Hari Kerja</strong>
               </div>
             </div>
 
             <div className="payment-instructions">
-              <h3>Payment Instructions</h3>
+              <h3>Instruksi Pembayaran</h3>
               {renderPaymentInstructions()}
             </div>
 
             <div className="confirmation-actions">
               <Button variant="primary" size="large" onClick={() => navigate('/')}>
-                Continue Shopping
+                {t('cart.continueShopping')}
               </Button>
               <Button variant="outline" size="large" onClick={() => window.print()}>
-                Print Order Details
+                Cetak Detail Pesanan
               </Button>
             </div>
           </div>
@@ -234,23 +236,23 @@ const Checkout = () => {
   return (
     <div className="checkout-page">
       <div className="container">
-        <h1 className="checkout-title">Checkout</h1>
+        <h1 className="checkout-title">{t('checkout.title')}</h1>
 
         {/* Progress Steps */}
         <div className="checkout-progress">
           <div className={`progress-step ${currentStep >= 1 ? 'active' : ''} ${currentStep > 1 ? 'completed' : ''}`}>
             <div className="step-number">1</div>
-            <div className="step-label">Shipping</div>
+            <div className="step-label">Pengiriman</div>
           </div>
           <div className="progress-line"></div>
           <div className={`progress-step ${currentStep >= 2 ? 'active' : ''} ${currentStep > 2 ? 'completed' : ''}`}>
             <div className="step-number">2</div>
-            <div className="step-label">Payment</div>
+            <div className="step-label">Pembayaran</div>
           </div>
           <div className="progress-line"></div>
           <div className={`progress-step ${currentStep >= 3 ? 'active' : ''}`}>
             <div className="step-number">3</div>
-            <div className="step-label">Review</div>
+            <div className="step-label">Tinjauan</div>
           </div>
         </div>
 
@@ -260,10 +262,10 @@ const Checkout = () => {
             {/* Step 1: Shipping Information */}
             {currentStep === 1 && (
               <div className="checkout-section">
-                <h2>Shipping Information</h2>
+                <h2>{t('checkout.shippingInfo')}</h2>
                 <form className="checkout-form">
                   <div className="form-group">
-                    <label htmlFor="fullName">Full Name *</label>
+                    <label htmlFor="fullName">{t('checkout.fullName')} *</label>
                     <input
                       type="text"
                       id="fullName"
@@ -277,7 +279,7 @@ const Checkout = () => {
 
                   <div className="form-row">
                     <div className="form-group">
-                      <label htmlFor="email">Email Address *</label>
+                      <label htmlFor="email">{t('checkout.email')} *</label>
                       <input
                         type="email"
                         id="email"
@@ -290,7 +292,7 @@ const Checkout = () => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="phone">Phone Number *</label>
+                      <label htmlFor="phone">{t('checkout.phone')} *</label>
                       <input
                         type="tel"
                         id="phone"
@@ -305,7 +307,7 @@ const Checkout = () => {
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="address">Street Address *</label>
+                    <label htmlFor="address">{t('checkout.address')} *</label>
                     <textarea
                       id="address"
                       name="address"
@@ -319,7 +321,7 @@ const Checkout = () => {
 
                   <div className="form-row">
                     <div className="form-group">
-                      <label htmlFor="city">City *</label>
+                      <label htmlFor="city">{t('checkout.city')} *</label>
                       <input
                         type="text"
                         id="city"
@@ -332,7 +334,7 @@ const Checkout = () => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="province">Province *</label>
+                      <label htmlFor="province">{t('checkout.province')} *</label>
                       <input
                         type="text"
                         id="province"
@@ -345,7 +347,7 @@ const Checkout = () => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="postalCode">Postal Code *</label>
+                      <label htmlFor="postalCode">{t('checkout.postalCode')} *</label>
                       <input
                         type="text"
                         id="postalCode"

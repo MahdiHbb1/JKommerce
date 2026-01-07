@@ -1,10 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from '../../hooks/useTranslation';
 import Button from '../../components/Button/Button';
 import model1 from '../../assets/images/model-1.png';
 import './About.css';
 
 const About = () => {
+  const { t } = useTranslation();
+  
   return (
     <div className="about-page">
       {/* Hero Section */}
@@ -14,9 +17,9 @@ const About = () => {
         </div>
         <div className="container">
           <div className="about-hero-content">
-            <h1>Our Story</h1>
+            <h1>{t('about.ourStory')}</h1>
             <p className="about-hero-subtitle">
-              Preserving Indonesian Heritage Through Timeless Batik Craftsmanship
+              Melestarikan Warisan Indonesia melalui Keahlian Batik yang Abadi
             </p>
           </div>
         </div>
@@ -28,22 +31,22 @@ const About = () => {
           <div className="about-content-grid">
             <div className="about-text">
               <h2>Janoer Koening</h2>
-              <h3 className="about-tagline">Where Tradition Meets Modern Elegance</h3>
+              <h3 className="about-tagline">Di Mana Tradisi Bertemu Keanggunan Modern</h3>
               <p>
-                Founded with a deep reverence for Indonesian cultural heritage, Janoer Koening 
-                is more than a batik brand—it's a movement to preserve and celebrate one of 
-                the world's most exquisite textile arts.
+                Didirikan dengan penghormatan mendalam terhadap warisan budaya Indonesia, Janoer Koening
+                lebih dari sekadar merek batik—ini adalah gerakan untuk melestarikan dan merayakan salah satu
+                seni tekstil paling menawan di dunia.
               </p>
               <p>
-                Our name combines "Janoer" (a tribute to artisan craftsmanship) with "Koening" 
-                (Dutch for "king"), reflecting our commitment to royal-quality batik that honors 
-                centuries-old traditions while embracing contemporary aesthetics.
+                Nama kami menggabungkan "Janoer" (penghormatan kepada keahlian pengrajin) dengan "Koening"
+                (bahasa Belanda untuk "raja"), mencerminkan komitmen kami terhadap batik berkualitas kerajaan yang menghormati
+                tradisi berabad-abad sambil merangkul estetika kontemporer.
               </p>
               <p>
-                Each piece in our collection tells a story—of skilled artisans who dedicate 
-                months to perfecting a single cloth, of ancient patterns carrying philosophical 
-                meanings, and of a cultural legacy recognized by UNESCO as a Masterpiece of 
-                Oral and Intangible Heritage of Humanity.
+                Setiap karya dalam koleksi kami menceritakan sebuah kisah—tentang pengrajin terampil yang mendedikasikan
+                berbulan-bulan untuk menyempurnakan satu kain, tentang pola kuno yang membawa makna
+                filosofis, dan tentang warisan budaya yang diakui oleh UNESCO sebagai Mahakarya
+                Warisan Lisan dan Takbenda Kemanusiaan.
               </p>
             </div>
             <div className="about-image">
@@ -59,20 +62,20 @@ const About = () => {
           <div className="mission-vision-grid">
             <div className="mission-card">
               <div className="mission-icon">🎨</div>
-              <h3>Our Mission</h3>
+              <h3>{t('about.mission')}</h3>
               <p>
-                To preserve and promote authentic Indonesian batik craftsmanship by connecting 
-                master artisans with discerning collectors worldwide, ensuring this sacred art 
-                form thrives for generations to come.
+                Melestarikan dan mempromosikan keahlian batik Indonesia autentik dengan menghubungkan
+                pengrajin master dengan kolektor yang berpengetahuan di seluruh dunia, memastikan bentuk seni suci ini
+                berkembang untuk generasi mendatang.
               </p>
             </div>
             <div className="mission-card">
               <div className="mission-icon">✨</div>
-              <h3>Our Vision</h3>
+              <h3>{t('about.vision')}</h3>
               <p>
-                To become the global standard for premium batik, where every piece represents 
-                the pinnacle of quality, authenticity, and cultural significance—making Indonesian 
-                heritage accessible to the world.
+                Menjadi standar global untuk batik premium, di mana setiap karya mewakili
+                puncak kualitas, keaslian, dan signifikansi budaya—membuat warisan Indonesia
+                dapat diakses oleh dunia.
               </p>
             </div>
           </div>
@@ -83,38 +86,38 @@ const About = () => {
       <section className="about-section craftsmanship-section">
         <div className="container">
           <div className="section-header">
-            <h2>The Art of Batik</h2>
-            <p>Three distinct techniques, each a masterpiece of dedication</p>
+            <h2>Seni Batik</h2>
+            <p>Tiga teknik berbeda, masing-masing adalah mahakarya dedikasi</p>
           </div>
           <div className="craftsmanship-grid">
             <div className="craftsmanship-item">
               <div className="craftsmanship-number">01</div>
               <h4>Batik Tulis</h4>
-              <p className="craftsmanship-subtitle">Hand-Drawn Excellence</p>
+              <p className="craftsmanship-subtitle">Keunggulan Gambar Tangan</p>
               <p>
-                The most prestigious form, where artisans use a canting (small copper reservoir) 
-                to hand-draw intricate patterns with liquid wax. A single cloth can require 
-                2-3 months of meticulous work, with every stroke carrying the artist's spirit.
+                Bentuk paling bergengsi, di mana pengrajin menggunakan canting (wadah tembaga kecil)
+                untuk menggambar pola rumit dengan lilin cair. Satu kain dapat memerlukan
+                2-3 bulan kerja teliti, dengan setiap goresan membawa semangat sang seniman.
               </p>
             </div>
             <div className="craftsmanship-item">
               <div className="craftsmanship-number">02</div>
               <h4>Batik Cap</h4>
-              <p className="craftsmanship-subtitle">Stamped Precision</p>
+              <p className="craftsmanship-subtitle">Presisi Stempel</p>
               <p>
-                Using hand-carved copper blocks (cap), artisans stamp patterns with hot wax. 
-                This technique combines efficiency with artistry, maintaining high quality 
-                while allowing for more accessible pricing.
+                Menggunakan blok tembaga yang diukir tangan (cap), pengrajin mencap pola dengan lilin panas.
+                Teknik ini menggabungkan efisiensi dengan seni, mempertahankan kualitas tinggi
+                sambil memungkinkan harga yang lebih terjangkau.
               </p>
             </div>
             <div className="craftsmanship-item">
               <div className="craftsmanship-number">03</div>
               <h4>Batik Printing</h4>
-              <p className="craftsmanship-subtitle">Contemporary Accessibility</p>
+              <p className="craftsmanship-subtitle">Aksesibilitas Kontemporer</p>
               <p>
-                Modern printing techniques make batik's beauty available for everyday wear. 
-                While less labor-intensive, each design still honors traditional patterns and 
-                color palettes rooted in centuries of Indonesian culture.
+                Teknik pencetakan modern membuat keindahan batik tersedia untuk pakaian sehari-hari.
+                Meskipun kurang padat karya, setiap desain masih menghormati pola tradisional dan
+                palet warna yang berakar pada berabad-abad budaya Indonesia.
               </p>
             </div>
           </div>
@@ -125,25 +128,25 @@ const About = () => {
       <section className="about-section values-section">
         <div className="container">
           <div className="section-header">
-            <h2>Our Values</h2>
-            <p>Principles that guide every thread we weave</p>
+            <h2>Nilai-Nilai Kami</h2>
+            <p>Prinsip yang memandu setiap benang yang kami tenun</p>
           </div>
           <div className="values-grid">
             <div className="value-item">
-              <h4>Authenticity</h4>
-              <p>Every piece is genuine, sourced directly from master artisans and certified for quality</p>
+              <h4>Keaslian</h4>
+              <p>Setiap karya adalah asli, bersumber langsung dari pengrajin master dan bersertifikat kualitas</p>
             </div>
             <div className="value-item">
-              <h4>Heritage</h4>
-              <p>We honor traditional techniques passed down through generations of Indonesian craftspeople</p>
+              <h4>Warisan</h4>
+              <p>Kami menghormati teknik tradisional yang diwariskan melalui generasi pengrajin Indonesia</p>
             </div>
             <div className="value-item">
-              <h4>Quality</h4>
-              <p>Premium materials, meticulous craftsmanship, and rigorous quality control standards</p>
+              <h4>Kualitas</h4>
+              <p>Material premium, keahlian yang teliti, dan standar kontrol kualitas yang ketat</p>
             </div>
             <div className="value-item">
-              <h4>Sustainability</h4>
-              <p>Natural dyes, eco-friendly processes, and fair compensation for our artisan partners</p>
+              <h4>Keberlanjutan</h4>
+              <p>Pewarna alami, proses ramah lingkungan, dan kompensasi yang adil untuk mitra pengrajin kami</p>
             </div>
           </div>
         </div>
@@ -153,11 +156,11 @@ const About = () => {
       <section className="about-cta">
         <div className="container">
           <div className="about-cta-content">
-            <h2>Experience the Legacy</h2>
-            <p>Discover our curated collection of authentic Indonesian batik</p>
+            <h2>Rasakan Warisan</h2>
+            <p>Temukan koleksi batik Indonesia autentik kami yang dikurasi</p>
             <Link to="/shop">
               <Button variant="primary" size="large">
-                Explore Collection
+                {t('home.exploreCollection')}
               </Button>
             </Link>
           </div>
