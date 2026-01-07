@@ -19,8 +19,8 @@
   right: 0;
   bottom: 0;
   background: 
-    linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-indigo) 100%),
-    url('../assets/images/motif-parang.jpg');
+    linear-gradient(135deg, #1e3a8a 0%, #4f46e5 100%),
+    url('../../assets/images/motif-parang.jpg');
   background-size: cover;
   background-position: center;
   background-blend-mode: overlay;
@@ -76,7 +76,7 @@
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 2px;
-  color: var(--accent-gold);
+  color: #d97706;
   font-weight: 600;
   margin-bottom: 1rem;
 }
@@ -93,7 +93,7 @@
 .hero-tagline {
   font-size: 1.5rem;
   font-weight: 300;
-  color: var(--accent-gold);
+  color: #d97706;
   margin-bottom: 1.5rem;
   font-style: italic;
 }
@@ -117,7 +117,7 @@
 /* Category Showcase */
 .category-showcase {
   padding: 5rem 0;
-  background-color: var(--bg-light);
+  background-color: #f9fafb;
 }
 
 .category-grid {
@@ -172,8 +172,8 @@
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background-color: var(--accent-gold);
-  color: var(--primary-navy);
+  background-color: #d97706;
+  color: #1e3a8a;
   padding: 0.4rem 0.8rem;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -191,26 +191,26 @@
 
 .category-info h3 {
   font-size: 1.5rem;
-  color: var(--primary-navy);
+  color: #1e3a8a;
   margin-bottom: 0.75rem;
 }
 
 .category-info p {
-  color: var(--text-secondary);
+  color: #6b7280;
   line-height: 1.6;
   margin-bottom: 1.25rem;
   flex: 1;
 }
 
 .category-link {
-  color: var(--primary-navy);
+  color: #1e3a8a;
   font-weight: 600;
   font-size: 0.95rem;
   transition: color 0.2s;
 }
 
 .category-card:hover .category-link {
-  color: var(--accent-gold);
+  color: #d97706;
 }
 
 /* Pattern Heritage */
@@ -255,13 +255,13 @@
 
 .pattern-item h4 {
   font-size: 1.1rem;
-  color: var(--primary-navy);
+  color: #1e3a8a;
   margin-bottom: 0.5rem;
   font-weight: 600;
 }
 
 .pattern-item p {
-  color: var(--text-secondary);
+  color: #6b7280;
   font-size: 0.9rem;
   line-height: 1.6;
 }
@@ -272,7 +272,7 @@
 }
 
 .section-bestsellers {
-  background: var(--neutral-light);
+  background: #f3f4f6;
 }
 
 .section-header {
@@ -286,26 +286,26 @@
 .section-header h2 {
   font-family: 'Playfair Display', serif;
   font-size: 2.25rem;
-  color: var(--primary-navy);
+  color: #1e3a8a;
   margin: 0 0 0.5rem 0;
 }
 
 .section-header p {
   font-size: 1rem;
-  color: var(--text-secondary);
+  color: #6b7280;
   margin: 0;
 }
 
 .section-subtitle {
   font-size: 1rem;
-  color: var(--text-secondary);
+  color: #6b7280;
   margin: 0;
 }
 
 /* Testimonials Section */
 .testimonials-section {
   padding: 5rem 0;
-  background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-indigo) 100%);
+  background: linear-gradient(135deg, #1e3a8a 0%, #4f46e5 100%);
   color: white;
 }
 
@@ -343,7 +343,7 @@
 }
 
 .testimonial-stars {
-  color: var(--accent-gold);
+  color: #d97706;
   font-size: 1.2rem;
   margin-bottom: 1rem;
   letter-spacing: 2px;
@@ -369,7 +369,7 @@
 }
 
 .testimonial-author span {
-  color: var(--accent-gold);
+  color: #d97706;
   font-size: 0.85rem;
 }
 
