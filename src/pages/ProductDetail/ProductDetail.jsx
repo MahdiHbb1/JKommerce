@@ -5,6 +5,7 @@ import { useWishlist } from '../../context/WishlistContext';
 import { useToast } from '../../context/ToastContext';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext';
 import { getProductById, getRelatedProducts, formatPrice } from '../../data/products';
+import { useTranslation } from '../../hooks/useTranslation';
 import Button from '../../components/Button/Button';
 import ProductGrid from '../../components/ProductGrid/ProductGrid';
 import { ProductDetailSkeleton } from '../../components/Skeleton/Skeleton';
@@ -17,6 +18,7 @@ const ProductDetail = () => {
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { success, error } = useToast();
   const { addToRecentlyViewed, getRecentlyViewed } = useRecentlyViewed();
+  const { t, formatCurrency } = useTranslation();
   
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,11 +96,11 @@ const ProductDetail = () => {
 
   const handleAddToCart = () => {
     if (product.stock === 0) {
-      error('This product is currently out of stock');
+      error(t('product.outOfStockMessage'));
       return;
     }
     addToCart(product, quantity, selectedSize, selectedColor);
-    success(`Added ${quantity}x "${product.name}" to cart!`);
+    success(t('cart.addedToCart', { quantity, name: product.name }));
   };
 
   const handleQuantityChange = (change) => {
@@ -115,9 +117,9 @@ const ProductDetail = () => {
   const handleWishlistToggle = () => {
     toggleWishlist(product);
     if (isInWishlist(product.id)) {
-      success('Removed from wishlist');
+      success(t('wishlist.removedFromWishlist'));
     } else {
-      success('Added to wishlist');
+      success(t('wishlist.addedToWishlist'));
     }
   };
 
@@ -135,7 +137,7 @@ const ProductDetail = () => {
       };
       setReviews([newReview, ...reviews]);
       setReviewForm({ name: '', rating: 5, comment: '' });
-      success('Thank you for your review!');
+      success(t('product.reviewSubmitted'));
     }
   };
 
@@ -188,9 +190,9 @@ const ProductDetail = () => {
       <div className="container">
         {/* Breadcrumb */}
         <nav className="breadcrumb">
-          <Link to="/">Home</Link>
+          <Link to="/">{t('nav.home')}</Link>
           <span className="breadcrumb-separator">/</span>
-          <Link to="/shop">Shop</Link>
+          <Link to="/shop">{t('nav.shop')}</Link>
           <span className="breadcrumb-separator">/</span>
           <span className="breadcrumb-current">{product.name}</span>
         </nav>
@@ -225,8 +227,8 @@ const ProductDetail = () => {
             </div>
 
             <div className="product-price">
-              <span className="price-value">{formatPrice(product.price)}</span>
-              <span className="price-note">Free shipping on all orders</span>
+              <span className="price-value">{formatCurrency(product.price)}</span>
+              <span className="price-note">{t('product.freeShipping')}</span>
             </div>
 
             <div className="product-description">
@@ -236,7 +238,7 @@ const ProductDetail = () => {
             {/* Size Selector */}
             {product.sizes && product.sizes.length > 0 && (
               <div className="product-option">
-                <label className="option-label">Size: <strong>{selectedSize}</strong></label>
+                <label className="option-label">{t('product.size')}: <strong>{selectedSize}</strong></label>
                 <div className="option-buttons">
                   {product.sizes.map((size) => (
                     <button
@@ -254,7 +256,7 @@ const ProductDetail = () => {
             {/* Color Selector */}
             {product.colors && product.colors.length > 0 && (
               <div className="product-option">
-                <label className="option-label">Color: <strong>{selectedColor}</strong></label>
+                <label className="option-label">{t('product.color')}: <strong>{selectedColor}</strong></label>
                 <div className="option-buttons">
                   {product.colors.map((color) => (
                     <button
@@ -271,7 +273,7 @@ const ProductDetail = () => {
 
             {/* Quantity Selector */}
             <div className="product-option">
-              <label className="option-label">Quantity</label>
+              <label className="option-label">{t('product.quantity')}</label>
               <div className="quantity-selector">
                 <button 
                   onClick={() => handleQuantityChange(-1)}
@@ -288,7 +290,7 @@ const ProductDetail = () => {
                 >
                   +
                 </button>
-                <span className="stock-info">{product.stock} available</span>
+                <span className="stock-info">{t('product.stockAvailable', { stock: product.stock })}</span>
               </div>
             </div>
 
@@ -301,40 +303,40 @@ const ProductDetail = () => {
                 onClick={handleAddToCart}
                 disabled={product.stock === 0}
               >
-                {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                {product.stock === 0 ? t('product.outOfStock') : t('product.addToCart')}
               </Button>
               
               <button 
                 className={`wishlist-action-btn ${inWishlist ? 'in-wishlist' : ''}`}
                 onClick={handleWishlistToggle}
-                title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+                title={inWishlist ? t('wishlist.removeFromWishlist') : t('wishlist.addToWishlist')}
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill={inWishlist ? 'currentColor' : 'none'}>
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" stroke={inWishlist ? 'none' : 'currentColor'} strokeWidth="2"/>
                 </svg>
-                <span>{inWishlist ? 'Saved' : 'Save'}</span>
+                <span>{inWishlist ? t('wishlist.saved') : t('wishlist.save')}</span>
               </button>
             </div>
 
             {/* Product Details */}
             <div className="product-details">
               <div className="detail-item">
-                <h3>Heritage & Meaning</h3>
+                <h3>{t('product.heritageAndMeaning')}</h3>
                 <p>{product.heritage}</p>
               </div>
               <div className="detail-item">
-                <h3>Craftsmanship Details</h3>
+                <h3>{t('product.craftsmanshipDetails')}</h3>
                 <p>{product.details}</p>
               </div>
               <div className="detail-item">
-                <h3>Pattern</h3>
+                <h3>{t('product.pattern')}</h3>
                 <p>{product.pattern}</p>
               </div>
             </div>
 
             {/* Social Share */}
             <div className="social-share">
-              <h3>Share this product</h3>
+              <h3>{t('product.shareProduct')}</h3>
               <div className="share-buttons">
                 <button onClick={() => handleShare('facebook')} className="share-btn facebook" title="Share on Facebook">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -365,19 +367,19 @@ const ProductDetail = () => {
         {/* Reviews Section */}
         <div className="reviews-section">
           <div className="reviews-header">
-            <h2>Customer Reviews</h2>
+            <h2>{t('product.customerReviews')}</h2>
             <div className="rating-summary">
               <div className="average-rating">
                 <span className="rating-number">{calculateAverageRating()}</span>
                 <div className="stars">{renderStars(Math.round(calculateAverageRating()))}</div>
-                <span className="review-count">Based on {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}</span>
+                <span className="review-count">{t('product.basedOnReviews', { count: reviews.length })}</span>
               </div>
             </div>
           </div>
 
           <div className="reviews-content">
             <div className="reviews-list">
-              <h3>What customers say</h3>
+              <h3>{t('product.whatCustomersSay')}</h3>
               {reviews.map((review) => (
                 <div key={review.id} className="review-item">
                   <div className="review-header">
@@ -393,21 +395,21 @@ const ProductDetail = () => {
             </div>
 
             <div className="review-form-container">
-              <h3>Write a Review</h3>
+              <h3>{t('product.writeReview')}</h3>
               <form onSubmit={handleReviewSubmit} className="review-form">
                 <div className="form-group">
-                  <label>Your Name</label>
+                  <label>{t('product.yourName')}</label>
                   <input
                     type="text"
                     value={reviewForm.name}
                     onChange={(e) => setReviewForm({ ...reviewForm, name: e.target.value })}
-                    placeholder="Enter your name"
+                    placeholder={t('product.enterYourName')}
                     required
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Rating</label>
+                  <label>{t('product.rating')}</label>
                   <div className="rating-input">
                     {[5, 4, 3, 2, 1].map((star) => (
                       <button
@@ -425,18 +427,18 @@ const ProductDetail = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Your Review</label>
+                  <label>{t('product.yourReview')}</label>
                   <textarea
                     value={reviewForm.comment}
                     onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
-                    placeholder="Share your experience with this product..."
+                    placeholder={t('product.shareExperience')}
                     rows="4"
                     required
                   />
                 </div>
 
                 <button type="submit" className="submit-review-btn">
-                  Submit Review
+                  {t('product.submitReview')}
                 </button>
               </form>
             </div>
@@ -446,12 +448,12 @@ const ProductDetail = () => {
         {/* Related Products */}
         {relatedProducts.length > 0 && (
           <div className="related-products">
-            <h2>You May Also Like</h2>
+            <h2>{t('product.youMayAlsoLike')}</h2>
             <ProductGrid
               products={relatedProducts}
               onAddToCart={(p) => {
                 addToCart(p, 1);
-                success(`Added "${p.name}" to cart!`);
+                success(t('cart.addedToCart', { quantity: 1, name: p.name }));
               }}
               onQuickView={handleRelatedProductClick}
             />
@@ -461,12 +463,12 @@ const ProductDetail = () => {
         {/* Recently Viewed Products */}
         {recentlyViewed.length > 0 && (
           <div className="related-products">
-            <h2>Recently Viewed</h2>
+            <h2>{t('product.recentlyViewed')}</h2>
             <ProductGrid
               products={recentlyViewed}
               onAddToCart={(p) => {
                 addToCart(p, 1);
-                success(`Added "${p.name}" to cart!`);
+                success(t('cart.addedToCart', { quantity: 1, name: p.name }));
               }}
               onQuickView={(p) => navigate(`/product/${p.id}`)}
             />
