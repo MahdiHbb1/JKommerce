@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useToast } from '../../context/ToastContext';
+import { useTranslation } from '../../hooks/useTranslation';
 import ProductGrid from '../../components/ProductGrid/ProductGrid';
 import QuickView from '../../components/QuickView/QuickView';
 import ProductFilter from '../../components/ProductFilter/ProductFilter';
@@ -13,6 +14,7 @@ import products from '../../data/products';
 const Shop = () => {
   const { addToCart } = useCart();
   const { success } = useToast();
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
   const [quickViewProduct, setQuickViewProduct] = useState(null);
@@ -161,7 +163,7 @@ const Shop = () => {
 
   const handleAddToCart = (product) => {
     addToCart(product, 1);
-    success(`Added "${product.name}" to cart!`);
+    success(t('notifications.addedToCart', { name: product.name }));
   };
 
   const handleQuickView = (product) => {
@@ -187,24 +189,23 @@ const Shop = () => {
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            Batik Collection
+            {t('shop.title')}
           </h1>
           {searchQuery ? (
             <div className="space-y-1">
               <p className="text-lg text-gray-600">
-                Search results for "<strong className="text-batik-orange">{searchQuery}</strong>"
+                {t('search.resultsFor')} "<strong className="text-batik-orange">{searchQuery}</strong>"
               </p>
               <p className="text-sm text-gray-500">
                 {filteredProducts.length > 0 
-                  ? `Found ${filteredProducts.length} ${filteredProducts.length === 1 ? 'product' : 'products'}`
-                  : 'No products found'
+                  ? t('search.found', { count: filteredProducts.length })
+                  : t('search.noResults')
                 }
               </p>
             </div>
           ) : (
             <p className="text-lg text-gray-600">
-              Discover authentic Indonesian batik pieces, 
-              each telling a unique story of heritage and craftsmanship.
+              {t('shop.description')}
             </p>
           )}
         </div>
@@ -226,13 +227,13 @@ const Shop = () => {
             {/* Toolbar */}
             <div className="mb-6 flex items-center justify-between bg-white p-4 rounded-lg shadow-sm">
               <div className="text-sm text-gray-600">
-                Showing {paginatedProducts.length} of {filteredProducts.length} products
+                {t('pagination.showing', { shown: paginatedProducts.length, total: filteredProducts.length })}
               </div>
               
               {/* Sort Dropdown */}
               <div className="flex items-center gap-3">
                 <label htmlFor="sort" className="text-sm font-medium text-gray-700">
-                  Sort by:
+                  {t('sort.sortBy')}:
                 </label>
                 <select
                   id="sort"
@@ -240,12 +241,12 @@ const Shop = () => {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-batik-orange focus:border-transparent"
                 >
-                  <option value="featured">Featured</option>
-                  <option value="newest">Newest</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-                  <option value="name-asc">Name: A to Z</option>
-                  <option value="name-desc">Name: Z to A</option>
+                  <option value="featured">{t('sort.featured')}</option>
+                  <option value="newest">{t('sort.newest')}</option>
+                  <option value="price-asc">{t('sort.priceLowToHigh')}</option>
+                  <option value="price-desc">{t('sort.priceHighToLow')}</option>
+                  <option value="name-asc">{t('sort.nameAZ')}</option>
+                  <option value="name-desc">{t('sort.nameZA')}</option>
                 </select>
               </div>
             </div>
@@ -286,13 +287,13 @@ const Shop = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                 </svg>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No products found
+                  {t('search.noProducts')}
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Try adjusting your filters to see more results.
+                  {t('search.tryAdjusting')}
                 </p>
                 <Button variant="primary" size="large" onClick={handleClearFilters}>
-                  Clear All Filters
+                  {t('filter.clearAll')}
                 </Button>
               </div>
             )}

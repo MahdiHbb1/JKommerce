@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import { useTranslation } from '../../hooks/useTranslation';
 import ProductGrid from '../../components/ProductGrid/ProductGrid';
 import QuickView from '../../components/QuickView/QuickView';
 import Button from '../../components/Button/Button';
@@ -14,6 +15,7 @@ import './Home.css';
 
 const Home = () => {
   const { addToCart } = useCart();
+  const { t } = useTranslation();
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   
   const featuredProducts = getFeaturedProducts().slice(0, 4);
@@ -21,7 +23,7 @@ const Home = () => {
 
   const handleAddToCart = (product) => {
     addToCart(product, 1);
-    alert(`✓ "${product.name}" has been added to your cart!`);
+    alert(`✓ "${product.name}" ${t('notifications.addedToCart')}`);
   };
 
   const handleQuickView = (product) => {
@@ -41,22 +43,21 @@ const Home = () => {
         </div>
         <div className="container">
           <div className="hero-content">
-            <span className="hero-label">Premium Indonesian Craftsmanship</span>
+            <span className="hero-label">{t('home.heroLabel')}</span>
             <h1 className="hero-title">Janoer Koening</h1>
-            <p className="hero-tagline">Heritage Batik Redefined</p>
+            <p className="hero-tagline">{t('home.heroTagline')}</p>
             <p className="hero-description">
-              Discover authentic Indonesian batik craftsmanship with modern sophistication.
-              Each piece tells a story of tradition, artistry, and cultural pride.
+              {t('home.heroDescription')}
             </p>
             <div className="hero-actions">
               <Link to="/shop">
                 <Button variant="primary" size="large">
-                  Explore Collection
+                  {t('home.exploreCollection')}
                 </Button>
               </Link>
               <Link to="/about">
                 <Button variant="outline" size="large">
-                  Our Story
+                  {t('home.ourStory')}
                 </Button>
               </Link>
             </div>
@@ -68,21 +69,21 @@ const Home = () => {
       <section className="category-showcase">
         <div className="container">
           <div className="section-header">
-            <h2>Explore by Technique</h2>
-            <p>Each technique represents a unique heritage of Indonesian batik craftsmanship</p>
+            <h2>{t('home.exploreTechnique')}</h2>
+            <p>{t('home.techniqueDescription')}</p>
           </div>
           <div className="category-grid">
             <Link to="/shop?category=Batik Tulis" className="category-card">
               <div className="category-image">
                 <img src={parangImg} alt="Batik Tulis" />
                 <div className="category-overlay">
-                  <span className="category-badge">Premium</span>
+                  <span className="category-badge">{t('home.premium')}</span>
                 </div>
               </div>
               <div className="category-info">
-                <h3>Batik Tulis</h3>
-                <p>Hand-drawn with canting, the most prestigious and time-intensive technique</p>
-                <span className="category-link">View Collection →</span>
+                <h3>{t('home.batikTulis')}</h3>
+                <p>{t('home.batikTulisDesc')}</p>
+                <span className="category-link">{t('home.viewCollection')} →</span>
               </div>
             </Link>
             <Link to="/shop?category=Batik Cap" className="category-card">
@@ -91,9 +92,9 @@ const Home = () => {
                 <div className="category-overlay"></div>
               </div>
               <div className="category-info">
-                <h3>Batik Cap</h3>
-                <p>Stamped with copper blocks, combining tradition with refined efficiency</p>
-                <span className="category-link">View Collection →</span>
+                <h3>{t('home.batikCap')}</h3>
+                <p>{t('home.batikCapDesc')}</p>
+                <span className="category-link">{t('home.viewCollection')} →</span>
               </div>
             </Link>
             <Link to="/shop?category=Batik Printing" className="category-card">
@@ -102,9 +103,9 @@ const Home = () => {
                 <div className="category-overlay"></div>
               </div>
               <div className="category-info">
-                <h3>Batik Printing</h3>
-                <p>Modern printed technique making batik accessible to contemporary lifestyle</p>
-                <span className="category-link">View Collection →</span>
+                <h3>{t('home.batikPrinting')}</h3>
+                <p>{t('home.batikPrintingDesc')}</p>
+                <span className="category-link">{t('home.viewCollection')} →</span>
               </div>
             </Link>
           </div>
@@ -115,37 +116,37 @@ const Home = () => {
       <section className="pattern-heritage">
         <div className="container">
           <div className="section-header">
-            <h2>Traditional Patterns</h2>
-            <p>Timeless motifs carrying deep philosophical meanings and cultural heritage</p>
+            <h2>{t('home.traditionalPatterns')}</h2>
+            <p>{t('home.patternsDescription')}</p>
           </div>
           <div className="pattern-grid">
             <div className="pattern-item">
               <div className="pattern-image">
                 <img src={parangImg} alt="Parang Pattern" />
               </div>
-              <h4>Parang</h4>
-              <p>Symbol of strength and power, traditionally reserved for royalty</p>
+              <h4>{t('home.parang')}</h4>
+              <p>{t('home.parangDesc')}</p>
             </div>
             <div className="pattern-item">
               <div className="pattern-image">
                 <img src={kawungImg} alt="Kawung Pattern" />
               </div>
-              <h4>Kawung</h4>
-              <p>Represents longevity, perfection, and purity of heart</p>
+              <h4>{t('home.kawung')}</h4>
+              <p>{t('home.kawungDesc')}</p>
             </div>
             <div className="pattern-item">
               <div className="pattern-image">
                 <img src={megaMendungImg} alt="Mega Mendung Pattern" />
               </div>
-              <h4>Mega Mendung</h4>
-              <p>Cloud motif symbolizing patience and self-control</p>
+              <h4>{t('home.megaMendung')}</h4>
+              <p>{t('home.megaMendungDesc')}</p>
             </div>
             <div className="pattern-item">
               <div className="pattern-image">
                 <img src={sekarJagadImg} alt="Sekar Jagad Pattern" />
               </div>
-              <h4>Sekar Jagad</h4>
-              <p>"Flowers of the world" - unity in diversity</p>
+              <h4>{t('home.sekarJagad')}</h4>
+              <p>{t('home.sekarJagadDesc')}</p>
             </div>
           </div>
         </div>
@@ -156,11 +157,11 @@ const Home = () => {
         <div className="container">
           <div className="section-header">
             <div>
-              <h2>Featured Collection</h2>
-              <p className="section-subtitle">Handpicked masterpieces from our artisans</p>
+              <h2>{t('home.featuredCollection')}</h2>
+              <p className="section-subtitle">{t('home.featuredSubtitle')}</p>
             </div>
             <Link to="/shop">
-              <Button variant="outline">View All</Button>
+              <Button variant="outline">{t('common.viewAll')}</Button>
             </Link>
           </div>
           <ProductGrid
@@ -176,11 +177,11 @@ const Home = () => {
         <div className="container">
           <div className="section-header">
             <div>
-              <h2>Bestsellers</h2>
-              <p className="section-subtitle">Most loved by our customers</p>
+              <h2>{t('home.bestsellers')}</h2>
+              <p className="section-subtitle">{t('home.bestsellersSubtitle')}</p>
             </div>
             <Link to="/shop">
-              <Button variant="outline">View All</Button>
+              <Button variant="outline">{t('common.viewAll')}</Button>
             </Link>
           </div>
           <ProductGrid
@@ -195,15 +196,14 @@ const Home = () => {
       <section className="testimonials-section">
         <div className="container">
           <div className="section-header">
-            <h2>What Our Customers Say</h2>
-            <p>Trusted by batik enthusiasts and collectors worldwide</p>
+            <h2>{t('home.testimonials')}</h2>
+            <p>{t('home.testimonialsSubtitle')}</p>
           </div>
           <div className="testimonials-grid">
             <div className="testimonial-card">
               <div className="testimonial-stars">★★★★★</div>
               <p className="testimonial-text">
-                "The craftsmanship is extraordinary. Each piece is a work of art that tells a story. 
-                I've received countless compliments wearing Janoer Koening batik."
+                {t('home.testimonial1')}
               </p>
               <div className="testimonial-author">
                 <strong>Sarah Wijaya</strong>
@@ -213,8 +213,7 @@ const Home = () => {
             <div className="testimonial-card">
               <div className="testimonial-stars">★★★★★</div>
               <p className="testimonial-text">
-                "As someone who appreciates traditional Indonesian art, I'm impressed by how 
-                Janoer Koening preserves heritage while maintaining modern elegance."
+                {t('home.testimonial2')}
               </p>
               <div className="testimonial-author">
                 <strong>Michael Hartono</strong>
@@ -224,8 +223,7 @@ const Home = () => {
             <div className="testimonial-card">
               <div className="testimonial-stars">★★★★★</div>
               <p className="testimonial-text">
-                "The quality is unmatched. I purchased a Batik Tulis piece and the detail is 
-                breathtaking. Worth every rupiah. Excellent customer service too!"
+                {t('home.testimonial3')}
               </p>
               <div className="testimonial-author">
                 <strong>Dewi Kusuma</strong>

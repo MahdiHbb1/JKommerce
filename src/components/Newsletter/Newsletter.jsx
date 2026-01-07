@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import './Newsletter.css';
 
 const Newsletter = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState(''); // '', 'success', 'error'
   const [message, setMessage] = useState('');
@@ -16,19 +18,19 @@ const Newsletter = () => {
     
     if (!email.trim()) {
       setStatus('error');
-      setMessage('Please enter your email address');
+      setMessage(t('validation.emailRequired'));
       return;
     }
 
     if (!validateEmail(email)) {
       setStatus('error');
-      setMessage('Please enter a valid email address');
+      setMessage(t('validation.emailInvalid'));
       return;
     }
 
     // Simulate subscription (no backend)
     setStatus('success');
-    setMessage('Thank you for subscribing! Check your inbox for exclusive offers.');
+    setMessage(t('footer.newsletterSuccess'));
     setEmail('');
 
     // Reset status after 5 seconds
@@ -42,8 +44,8 @@ const Newsletter = () => {
     <div className="newsletter">
       <div className="newsletter-content">
         <div className="newsletter-text">
-          <h3>Subscribe to Our Newsletter</h3>
-          <p>Get exclusive updates on new batik collections, special offers, and cultural stories</p>
+          <h3>{t('footer.newsletter')}</h3>
+          <p>{t('footer.newsletterDesc')}</p>
         </div>
         
         <form onSubmit={handleSubmit} className="newsletter-form">
@@ -52,7 +54,7 @@ const Newsletter = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email address"
+              placeholder={t('footer.emailPlaceholder')}
               className={`newsletter-input ${status === 'error' ? 'error' : ''}`}
               disabled={status === 'success'}
             />
@@ -61,7 +63,7 @@ const Newsletter = () => {
               className="newsletter-btn"
               disabled={status === 'success'}
             >
-              Subscribe
+              {t('footer.subscribe')}
             </button>
           </div>
           

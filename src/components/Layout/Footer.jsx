@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Newsletter from '../Newsletter/Newsletter';
+import { useTranslation } from '../../hooks/useTranslation';
 import './Footer.css';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const { t } = useTranslation();
 
   return (
     <footer className="footer">
@@ -16,10 +18,9 @@ const Footer = () => {
           {/* Brand Section */}
           <div className="footer-section">
             <h3 className="footer-brand">Janoer Koening</h3>
-            <p className="footer-tagline">Heritage Batik Redefined</p>
+            <p className="footer-tagline">{t('footer.tagline')}</p>
             <p className="footer-description">
-              Preserving Indonesian batik craftsmanship with modern sophistication. 
-              Each piece tells a story of tradition and artistry.
+              {t('footer.description')}
             </p>
             <div className="social-links">
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
@@ -42,29 +43,29 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div className="footer-section">
-            <h4 className="footer-title">Quick Links</h4>
+            <h4 className="footer-title">{t('footer.quickLinks')}</h4>
             <ul className="footer-links">
-              <li><Link to="/shop">Shop Collection</Link></li>
-              <li><Link to="/about">About Us</Link></li>
-              <li><Link to="/cart">Shopping Cart</Link></li>
-              <li><Link to="/checkout">Checkout</Link></li>
+              <li><Link to="/shop">{t('footer.shopCollection')}</Link></li>
+              <li><Link to="/about">{t('footer.aboutUs')}</Link></li>
+              <li><Link to="/cart">{t('footer.shoppingCart')}</Link></li>
+              <li><Link to="/checkout">{t('footer.checkout')}</Link></li>
             </ul>
           </div>
 
           {/* Customer Service */}
           <div className="footer-section">
-            <h4 className="footer-title">Customer Service</h4>
+            <h4 className="footer-title">{t('footer.customerService')}</h4>
             <ul className="footer-links">
-              <li><a href="#shipping">Shipping Info</a></li>
-              <li><a href="#returns">Returns Policy</a></li>
-              <li><a href="#care">Batik Care Guide</a></li>
-              <li><a href="#faq">FAQ</a></li>
+              <li><a href="#shipping">{t('footer.shippingInfo')}</a></li>
+              <li><a href="#returns">{t('footer.returnsPolicy')}</a></li>
+              <li><a href="#care">{t('footer.careGuide')}</a></li>
+              <li><a href="#faq">{t('footer.faq')}</a></li>
             </ul>
           </div>
 
           {/* Contact Info */}
           <div className="footer-section">
-            <h4 className="footer-title">Contact Us</h4>
+            <h4 className="footer-title">{t('footer.contactUs')}</h4>
             <ul className="footer-contact">
               <li>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -91,11 +92,11 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="footer-bottom">
-          <p>&copy; {currentYear} Janoer Koening. All rights reserved.</p>
+          <p>{t('footer.copyright', { year: currentYear })}</p>
           <div className="footer-bottom-links">
-            <a href="#privacy">Privacy Policy</a>
+            <a href="#privacy">{t('footer.privacyPolicy')}</a>
             <span>•</span>
-            <a href="#terms">Terms of Service</a>
+            <a href="#terms">{t('footer.termsOfService')}</a>
           </div>
         </div>
       </div>

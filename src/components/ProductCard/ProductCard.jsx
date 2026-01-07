@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatPrice } from '../../data/products';
 import { useWishlist } from '../../context/WishlistContext';
+import { useTranslation } from '../../hooks/useTranslation';
 import Button from '../ui/Button';
 
 /**
@@ -22,6 +23,7 @@ import Button from '../ui/Button';
 const ProductCard = ({ product, onAddToCart, onQuickView }) => {
   const [imageError, setImageError] = useState(false);
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { t } = useTranslation();
   
   const {
     id,
@@ -135,17 +137,17 @@ const ProductCard = ({ product, onAddToCart, onQuickView }) => {
             <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
               {featured && (
                 <span className="inline-block px-3 py-1 bg-primary-600 text-white text-xs font-semibold rounded-full shadow-sm">
-                  Featured
+                  {t('product.featured')}
                 </span>
               )}
               {bestseller && (
                 <span className="inline-block px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-full shadow-sm">
-                  Bestseller
+                  {t('product.bestseller')}
                 </span>
               )}
               {isOutOfStock && (
                 <span className="inline-block px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded-full shadow-sm">
-                  Out of Stock
+                  {t('product.outOfStock')}
                 </span>
               )}
             </div>
@@ -188,7 +190,7 @@ const ProductCard = ({ product, onAddToCart, onQuickView }) => {
               <button
                 onClick={handleQuickView}
                 className="p-3 bg-white text-primary-600 rounded-full hover:bg-primary-600 hover:text-white transition-colors shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300"
-                aria-label="Quick view"
+                aria-label={t('product.quickView')}
               >
                 <EyeIcon />
               </button>
@@ -202,7 +204,7 @@ const ProductCard = ({ product, onAddToCart, onQuickView }) => {
                   ? 'bg-red-500 text-white hover:bg-red-600'
                   : 'bg-white text-neutral-600 hover:bg-red-500 hover:text-white'
               }`}
-              aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+              aria-label={inWishlist ? t('product.removeFromWishlist') : t('product.addToWishlist')}
             >
               <HeartIcon filled={inWishlist} />
             </button>
@@ -211,7 +213,7 @@ const ProductCard = ({ product, onAddToCart, onQuickView }) => {
           {/* Out of Stock Overlay */}
           {isOutOfStock && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-              <span className="text-white text-lg font-bold">Out of Stock</span>
+              <span className="text-white text-lg font-bold">{t('product.outOfStock')}</span>
             </div>
           )}
         </div>
@@ -242,7 +244,7 @@ const ProductCard = ({ product, onAddToCart, onQuickView }) => {
             disabled={isOutOfStock}
             icon={<CartIcon />}
           >
-            {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+            {isOutOfStock ? t('product.outOfStock') : t('product.addToCart')}
           </Button>
         </div>
       </Link>

@@ -2,20 +2,14 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useToast } from '../../context/ToastContext';
+import { useTranslation } from '../../hooks/useTranslation';
 import Button from '../../components/Button/Button';
 import './Cart.css';
 
 const Cart = () => {
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart();
   const { success, error, info } = useToast();
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
+  const { t, formatCurrency } = useTranslation();
 
   const handleQuantityChange = (cartItemId, currentQuantity, change) => {
     const newQuantity = currentQuantity + change;
@@ -25,16 +19,16 @@ const Cart = () => {
   };
 
   const handleRemoveItem = (cartItemId, productName) => {
-    if (window.confirm(`Remove "${productName}" from cart?`)) {
+    if (window.confirm(t('cart.removeConfirm', { name: productName }))) {
       removeFromCart(cartItemId);
-      info(`Removed "${productName}" from cart`);
+      info(t('cart.itemRemoved', { name: productName }));
     }
   };
 
   const handleClearCart = () => {
-    if (window.confirm('Are you sure you want to clear your entire cart?')) {
+    if (window.confirm(t('cart.clearConfirm'))) {
       clearCart();
-      success('Cart cleared');
+      success(t('cart.cartCleared'));
     }
   };
 
@@ -48,10 +42,10 @@ const Cart = () => {
                 <path d="M9 2L7.17 4H3c-.55 0-1 .45-1 1v14c0 .55.45 1 1 1h18c.55 0 1-.45 1-1V5c0-.55-.45-1-1-1h-4.17L15 2H9zm3 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" fill="currentColor" opacity="0.3"/>
               </svg>
             </div>
-            <h2>Your Cart is Empty</h2>
-            <p>Looks like you haven't added any items to your cart yet.</p>
+            <h2>{t('cart.empty')}</h2>
+            <p>{t('cart.emptyMessage')}</p>
             <Link to="/shop">
-              <Button variant="primary" size="large">Start Shopping</Button>
+              <Button variant="primary" size="large">{t('cart.startShopping')}</Button>
             </Link>
           </div>
         </div>
@@ -68,9 +62,9 @@ const Cart = () => {
     <div className="cart-page">
       <div className="container">
         <div className="cart-header">
-          <h1>Shopping Cart</h1>
+          <h1>{t('cart.title')}</h1>
           <button onClick={handleClearCart} className="clear-cart-btn">
-            Clear Cart
+            {t('cart.clearCart')}
           </button>
         </div>
 
@@ -91,10 +85,10 @@ const Cart = () => {
                   
                   <div className="cart-item-variants">
                     {item.selectedSize && (
-                      <span className="variant-tag">Size: {item.selectedSize}</span>
+                      <span className="variant-tag">{t('product.size')}: {item.selectedSize}</span>
                     )}
                     {item.selectedColor && (
-                      <span className="variant-tag">Color: {item.selectedColor}</span>
+                      <span className="variant-tag">{t('product.color')}: {item.selectedColor}</span>
                     )}
                   </div>
 
@@ -103,14 +97,14 @@ const Cart = () => {
                       <button 
                         onClick={() => handleQuantityChange(item.cartItemId, item.quantity, -1)}
                         disabled={item.quantity <= 1}
-                        aria-label="Decrease quantity"
+                        aria-label={t('cart.decreaseQuantity')}
                       >
                         -
                       </button>
                       <span className="quantity-value">{item.quantity}</span>
                       <button 
                         onClick={() => handleQuantityChange(item.cartItemId, item.quantity, 1)}
-                        aria-label="Increase quantity"
+                        aria-label={t('cart.increaseQuantity')}
                       >
                         +
                       </button>
@@ -118,18 +112,18 @@ const Cart = () => {
                     <button 
                       onClick={() => handleRemoveItem(item.cartItemId, item.name)}
                       className="remove-item-btn"
-                      aria-label="Remove item"
+                      aria-label={t('cart.removeItem')}
                     >
-                      Remove
+                      {t('cart.remove')}
                     </button>
                   </div>
                 </div>
 
                 <div className="cart-item-price">
-                  <p className="item-price">{formatPrice(item.price)}</p>
+                  <p className="item-price">{formatCurrency(item.price)}</p>
                   {item.quantity > 1 && (
                     <p className="item-subtotal">
-                      {formatPrice(item.price * item.quantity)}
+                      {formatCurrency(item.price * item.quantity)}
                     </p>
                   )}
                 </div>
@@ -139,7 +133,7 @@ const Cart = () => {
                     <button 
                       onClick={() => handleQuantityChange(item.cartItemId, item.quantity, -1)}
                       disabled={item.quantity <= 1}
-                      aria-label="Decrease quantity"
+                      aria-label={t('cart.decreaseQuantity')}
                     >
                       -
                     </button>
@@ -167,45 +161,45 @@ const Cart = () => {
 
           {/* Order Summary */}
           <div className="cart-summary">
-            <h2>Order Summary</h2>
+            <h2>{t('cart.orderSummary')}</h2>
             
             <div className="summary-row">
-              <span>Subtotal</span>
-              <span>{formatPrice(subtotal)}</span>
+              <span>{t('cart.subtotal')}</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
             
             <div className="summary-row">
-              <span>Shipping</span>
-              <span className="free-shipping">FREE</span>
+              <span>{t('cart.shipping')}</span>
+              <span className="free-shipping">{t('cart.freeShipping')}</span>
             </div>
             
             <div className="summary-row">
-              <span>Tax (PPN 11%)</span>
-              <span>{formatPrice(tax)}</span>
+              <span>{t('cart.tax')}</span>
+              <span>{formatCurrency(tax)}</span>
             </div>
             
             <div className="summary-divider"></div>
             
             <div className="summary-row summary-total">
-              <span>Total</span>
-              <span>{formatPrice(total)}</span>
+              <span>{t('cart.total')}</span>
+              <span>{formatCurrency(total)}</span>
             </div>
 
             <Link to="/checkout">
               <Button variant="primary" size="large" fullWidth>
-                Proceed to Checkout
+                {t('cart.proceedCheckout')}
               </Button>
             </Link>
             
             <Link to="/shop">
               <Button variant="outline" size="medium" fullWidth>
-                Continue Shopping
+                {t('cart.continueShopping')}
               </Button>
             </Link>
 
             <div className="shipping-notice">
-              <p>🚚 Free shipping on all orders</p>
-              <p>📦 Ships within 2-3 business days</p>
+              <p>{t('cart.freeShippingNotice')}</p>
+              <p>{t('cart.shippingTime')}</p>
             </div>
           </div>
         </div>
