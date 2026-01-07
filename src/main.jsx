@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { LanguageProvider } from './context/LanguageContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { OrderProvider } from './context/OrderContext';
@@ -18,18 +19,20 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         v7_relativeSplatPath: true
       }}
     >
-      <ToastProvider>
-        <RecentlyViewedProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <OrderProvider>
-                <ToastContainer />
-                <App />
-              </OrderProvider>
-            </WishlistProvider>
-          </CartProvider>
-        </RecentlyViewedProvider>
-      </ToastProvider>
+      <LanguageProvider>
+        <ToastProvider>
+          <RecentlyViewedProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <OrderProvider>
+                  <ToastContainer />
+                  <App />
+                </OrderProvider>
+              </WishlistProvider>
+            </CartProvider>
+          </RecentlyViewedProvider>
+        </ToastProvider>
+      </LanguageProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

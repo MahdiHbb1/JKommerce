@@ -1,0 +1,73 @@
+.language-toggle {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+}
+
+.language-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.language-toggle-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.language-option {
+  opacity: 0.6;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+.language-option.active {
+  opacity: 1;
+  color: #d97706;
+}
+
+.language-separator {
+  opacity: 0.3;
+  font-weight: 300;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .language-toggle {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Dark theme for header */
+.header-dark .language-toggle {
+  color: white;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.header-dark .language-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Light theme for scrolled header */
+.header-light .language-toggle {
+  color: #1f2937;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.header-light .language-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.header-light .language-option.active {
+  color: #d97706;
+}

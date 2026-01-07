@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
+import { useTranslation } from '../../hooks/useTranslation';
 import SearchBar from '../SearchBar/SearchBar';
 import CartDrawer from '../Cart/CartDrawer';
+import LanguageToggle from '../LanguageToggle/LanguageToggle';
 
 /**
  * Header Component with Tailwind CSS
@@ -15,6 +17,7 @@ import CartDrawer from '../Cart/CartDrawer';
  * - Wishlist counter
  * - Search bar
  * - Active link highlighting
+ * - Language toggle
  */
 
 const Header = () => {
@@ -25,6 +28,7 @@ const Header = () => {
   
   const { getTotalItems } = useCart();
   const { wishlistCount } = useWishlist();
+  const { t } = useTranslation();
   const cartItemCount = getTotalItems();
 
   // Handle scroll effect
@@ -98,7 +102,7 @@ const Header = () => {
                   }`
                 }
               >
-                Home
+                {t('nav.home')}
               </NavLink>
               <NavLink
                 to="/shop"
@@ -108,7 +112,7 @@ const Header = () => {
                   }`
                 }
               >
-                Shop
+                {t('nav.shop')}
               </NavLink>
               <NavLink
                 to="/about"
@@ -118,7 +122,7 @@ const Header = () => {
                   }`
                 }
               >
-                About
+                {t('nav.about')}
               </NavLink>
             </nav>
 
@@ -129,11 +133,16 @@ const Header = () => {
 
             {/* Right Actions */}
             <div className="flex items-center gap-2">
+              {/* Language Toggle - Desktop */}
+              <div className="hidden md:block mr-2">
+                <LanguageToggle />
+              </div>
+
               {/* Mobile Search Toggle */}
               <button
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                 className="md:hidden p-2 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors"
-                aria-label="Search"
+                aria-label={t('common.search')}
               >
                 <SearchIcon />
               </button>
@@ -142,7 +151,7 @@ const Header = () => {
               <Link
                 to="/wishlist"
                 className="p-2 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative"
-                aria-label="Wishlist"
+                aria-label={t('nav.wishlist')}
               >
                 <HeartIcon />
                 {wishlistCount > 0 && (
@@ -156,7 +165,7 @@ const Header = () => {
               <button
                 onClick={() => setIsCartOpen(true)}
                 className="p-2 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative"
-                aria-label="Shopping cart"
+                aria-label={t('nav.cart')}
               >
                 <ShoppingBagIcon />
                 {cartItemCount > 0 && (
@@ -204,6 +213,11 @@ const Header = () => {
           {/* Menu Panel */}
           <div className="fixed top-20 left-0 right-0 bottom-0 bg-white z-40 md:hidden animate-slide-in-right overflow-y-auto">
             <nav className="flex flex-col p-6 space-y-4">
+              {/* Language Toggle - Mobile */}
+              <div className="pb-4 border-b border-neutral-200">
+                <LanguageToggle />
+              </div>
+
               <NavLink
                 to="/"
                 onClick={closeMobileMenu}
@@ -215,7 +229,7 @@ const Header = () => {
                   }`
                 }
               >
-                Home
+                {t('nav.home')}
               </NavLink>
               <NavLink
                 to="/shop"
@@ -228,7 +242,7 @@ const Header = () => {
                   }`
                 }
               >
-                Shop
+                {t('nav.shop')}
               </NavLink>
               <NavLink
                 to="/about"
@@ -241,7 +255,7 @@ const Header = () => {
                   }`
                 }
               >
-                About
+                {t('nav.about')}
               </NavLink>
 
               {/* Additional Mobile Links */}
@@ -251,7 +265,7 @@ const Header = () => {
                   onClick={closeMobileMenu}
                   className="text-base text-neutral-600 hover:text-primary-600 py-2 px-4 block"
                 >
-                  Order History
+                  {t('orders.title')}
                 </NavLink>
               </div>
             </nav>
