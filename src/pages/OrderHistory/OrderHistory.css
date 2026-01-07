@@ -1,0 +1,382 @@
+.order-history-page {
+  padding: 60px 0 80px;
+  min-height: 80vh;
+}
+
+.order-header {
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.order-header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  color: var(--primary-navy);
+  margin: 0 0 8px 0;
+}
+
+.order-subtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Empty State */
+.empty-orders {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.empty-icon {
+  margin-bottom: 30px;
+  color: #ddd;
+}
+
+.empty-orders h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  color: var(--primary-navy);
+  margin: 0 0 15px 0;
+}
+
+.empty-orders p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin: 0 0 30px 0;
+}
+
+.empty-orders .btn {
+  padding: 14px 32px;
+  font-size: 16px;
+}
+
+/* Orders List */
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.order-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+.order-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.order-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.order-summary:hover {
+  background-color: #f8f8f8;
+}
+
+.order-info {
+  flex: 1;
+}
+
+.order-number {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.order-number strong {
+  font-size: 1.1rem;
+  color: var(--primary-navy);
+}
+
+.order-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: white;
+  letter-spacing: 0.5px;
+}
+
+.order-meta {
+  display: flex;
+  gap: 20px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.order-total-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.order-total {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.expand-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.expand-btn svg.rotated {
+  transform: rotate(180deg);
+}
+
+/* Order Details */
+.order-details {
+  padding: 24px;
+  border-top: 1px solid var(--border-color);
+  background-color: #fafafa;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.order-items {
+  margin-bottom: 30px;
+}
+
+.order-items h3 {
+  font-size: 1.1rem;
+  color: var(--primary-navy);
+  margin: 0 0 15px 0;
+  font-weight: 600;
+}
+
+.order-item {
+  display: flex;
+  gap: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.order-item img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-info h4 {
+  font-size: 1rem;
+  color: var(--primary-navy);
+  margin: 0 0 5px 0;
+  font-weight: 600;
+}
+
+.item-variants {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 3px 0;
+}
+
+.item-quantity {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.item-price {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent-gold);
+  white-space: nowrap;
+}
+
+/* Order Info Grid */
+.order-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.info-section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.info-section h3 {
+  font-size: 1rem;
+  color: var(--primary-navy);
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--accent-gold);
+}
+
+.info-section p {
+  margin: 0 0 5px 0;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.order-totals {
+  background: var(--bg-light);
+  border: 2px solid var(--border-color);
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.total-row.final-total {
+  border-top: 2px solid var(--border-color);
+  margin-top: 8px;
+  padding-top: 12px;
+  font-size: 1.1rem;
+  color: var(--primary-navy);
+}
+
+/* Order Actions */
+.order-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.order-actions .btn {
+  padding: 12px 24px;
+  font-size: 14px;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-secondary {
+  background: var(--accent-gold);
+  color: white;
+  border: none;
+}
+
+.btn-secondary:hover {
+  background: #c08552;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--primary-navy);
+  border: 2px solid var(--primary-navy);
+}
+
+.btn-outline:hover {
+  background: var(--primary-navy);
+  color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .order-history-page {
+    padding: 40px 0 60px;
+  }
+
+  .order-header h1 {
+    font-size: 2rem;
+  }
+
+  .order-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .order-total-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .order-item {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .order-item img {
+    width: 100%;
+    height: auto;
+    max-width: 200px;
+  }
+
+  .order-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-actions {
+    flex-direction: column;
+  }
+
+  .order-actions .btn {
+    width: 100%;
+  }
+
+  .empty-orders {
+    padding: 60px 20px;
+  }
+
+  .empty-orders h2 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .order-meta {
+    flex-direction: column;
+    gap: 5px;
+  }
+}

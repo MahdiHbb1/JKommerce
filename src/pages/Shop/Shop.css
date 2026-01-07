@@ -1,0 +1,115 @@
+.shop-page {
+  min-height: 60vh;
+  padding: 2rem 0 4rem;
+}
+
+/* Shop Header */
+.shop-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.shop-header-content h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.75rem;
+  color: var(--primary-navy);
+  margin: 0 0 0.75rem 0;
+  line-height: 1.2;
+}
+
+.shop-subtitle {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 700px;
+  margin: 0;
+}
+
+/* Search Results */
+.search-results-info {
+  margin-top: 0.5rem;
+}
+
+.search-query {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.search-query strong {
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.results-count {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Shop Content Layout */
+.shop-content {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.shop-products {
+  min-height: 400px;
+}
+
+/* No Products State */
+.no-products {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+}
+
+.no-products h3 {
+  font-size: 1.5rem;
+  color: var(--primary-navy);
+  margin-bottom: 0.75rem;
+}
+
+.no-products p {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .shop-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .shop-page {
+    padding: 1.5rem 0 3rem;
+  }
+
+  .shop-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  .shop-header-content h1 {
+    font-size: 2rem;
+  }
+
+  .shop-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .no-products {
+    padding: 3rem 1.5rem;
+  }
+
+  .no-products h3 {
+    font-size: 1.3rem;
+  }
+}

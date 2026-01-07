@@ -1,0 +1,117 @@
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+  padding: 1rem 0;
+  animation: fadeIn 0.6s ease-in;
+}
+
+/* Responsive Grid Breakpoints */
+@media (min-width: 1400px) {
+  .product-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* Empty State */
+.product-grid-empty {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+}
+
+.empty-state {
+  text-align: center;
+  max-width: 400px;
+  animation: fadeIn 0.6s ease-in;
+}
+
+.empty-state svg {
+  color: var(--text-secondary);
+  opacity: 0.3;
+  margin: 0 auto 1.5rem;
+  display: block;
+}
+
+.empty-state h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.75rem;
+  color: var(--primary-navy);
+  margin-bottom: 0.75rem;
+}
+
+.empty-state p {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Stagger animation for grid items */
+.product-grid > * {
+  animation: fadeInStagger 0.5s ease-out backwards;
+}
+
+.product-grid > *:nth-child(1) { animation-delay: 0.05s; }
+.product-grid > *:nth-child(2) { animation-delay: 0.1s; }
+.product-grid > *:nth-child(3) { animation-delay: 0.15s; }
+.product-grid > *:nth-child(4) { animation-delay: 0.2s; }
+.product-grid > *:nth-child(5) { animation-delay: 0.25s; }
+.product-grid > *:nth-child(6) { animation-delay: 0.3s; }
+.product-grid > *:nth-child(7) { animation-delay: 0.35s; }
+.product-grid > *:nth-child(8) { animation-delay: 0.4s; }
+
+@keyframes fadeInStagger {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .product-grid,
+  .product-grid > *,
+  .empty-state {
+    animation: none;
+  }
+}
