@@ -4,6 +4,7 @@ import { formatPrice } from '../../data/products';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useToast } from '../../context/ToastContext';
+import { useTranslation } from '../../hooks/useTranslation';
 import Button from '../ui/Button';
 
 /**
@@ -20,6 +21,7 @@ const QuickView = ({ product, onClose }) => {
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { success } = useToast();
+  const { t, formatCurrency } = useTranslation();
 
   useEffect(() => {
     if (product) {
@@ -53,15 +55,15 @@ const QuickView = ({ product, onClose }) => {
       quantity
     };
     addToCart(cartItem);
-    success(`Added ${quantity}x "${product.name}" to cart!`);
+    success(t('cart.addedToCart', { quantity, name: product.name }));
   };
 
   const handleWishlistToggle = () => {
     toggleWishlist(product);
     if (isInWishlist(product.id)) {
-      success('Removed from wishlist');
+      success(t('wishlist.removedFromWishlist'));
     } else {
-      success('Added to wishlist');
+      success(t('wishlist.addedToWishlist'));
     }
   };
 
@@ -119,12 +121,12 @@ const QuickView = ({ product, onClose }) => {
               />
               {product.featured && (
                 <span className="absolute top-3 left-3 px-3 py-1 bg-batik-orange text-white text-xs font-semibold rounded-full">
-                  Featured
+                  {t('product.featured')}
                 </span>
               )}
               {product.bestseller && (
                 <span className="absolute top-3 right-3 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
-                  Bestseller
+                  {t('product.bestSeller')}
                 </span>
               )}
             </div>
@@ -162,21 +164,21 @@ const QuickView = ({ product, onClose }) => {
               </h2>
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-3xl font-bold text-batik-orange">
-                  {formatPrice(product.price)}
+                  {formatCurrency(product.price)}
                 </span>
                 {product.stock > 0 ? (
                   <span className="flex items-center gap-1 text-sm text-green-600">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
-                    In Stock ({product.stock} available)
+                    {t('product.inStock')} ({t('product.stockAvailable', { stock: product.stock })})
                   </span>
                 ) : (
                   <span className="flex items-center gap-1 text-sm text-red-600">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
-                    Out of Stock
+                    {t('product.outOfStock')}
                   </span>
                 )}
               </div>
@@ -199,7 +201,7 @@ const QuickView = ({ product, onClose }) => {
             {product.sizes && product.sizes.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Size:
+                  {t('product.size')}:
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map(size => (
@@ -223,7 +225,7 @@ const QuickView = ({ product, onClose }) => {
             {product.colors && product.colors.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Color:
+                  {t('product.color')}:
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {product.colors.map(color => (
@@ -247,7 +249,7 @@ const QuickView = ({ product, onClose }) => {
             {/* Quantity */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Quantity:
+                {t('product.quantity')}:
               </label>
               <div className="flex items-center gap-3">
                 <button
@@ -286,7 +288,7 @@ const QuickView = ({ product, onClose }) => {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                Add to Cart
+                {t('product.addToCart')}
               </Button>
               <button
                 className={`p-3 rounded-lg border-2 transition-all ${
@@ -295,7 +297,7 @@ const QuickView = ({ product, onClose }) => {
                     : 'border-gray-300 hover:border-red-300 hover:bg-red-50 text-gray-700'
                 }`}
                 onClick={handleWishlistToggle}
-                aria-label={isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                aria-label={isInWishlist(product.id) ? t('wishlist.removeFromWishlist') : t('wishlist.addToWishlist')}
               >
                 <svg 
                   className="w-6 h-6" 
@@ -313,7 +315,7 @@ const QuickView = ({ product, onClose }) => {
               className="block w-full text-center py-3 text-batik-orange hover:text-batik-orange-dark font-medium transition-colors"
               onClick={onClose}
             >
-              View Full Details →
+              {t('product.viewDetails')} →
             </Link>
 
             {/* Features */}
@@ -322,19 +324,19 @@ const QuickView = ({ product, onClose }) => {
                 <svg className="w-5 h-5 text-batik-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                 </svg>
-                <span>Free shipping on orders over $100</span>
+                <span>{t('features.freeShipping')}</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-600">
                 <svg className="w-5 h-5 text-batik-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                <span>30-day return policy</span>
+                <span>{t('features.returnPolicy')}</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-600">
                 <svg className="w-5 h-5 text-batik-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>100% authentic batik</span>
+                <span>{t('features.authenticBatik')}</span>
               </div>
             </div>
           </div>
