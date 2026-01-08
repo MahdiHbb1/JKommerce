@@ -189,7 +189,7 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
             <div className="space-y-4">
               {/* Min Price */}
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-2">
+                <label htmlFor="filter-price-min" className="block text-xs font-medium text-neutral-700 mb-2">
                   Min Price
                 </label>
                 <input
@@ -202,13 +202,14 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
                   onChange={(e) => handlePriceChange('min', e.target.value)}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   placeholder="Rp 0"
+                  autoComplete="off"
                   aria-label="Minimum price filter"
                 />
               </div>
 
               {/* Max Price */}
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-2">
+                <label htmlFor="filter-price-max" className="block text-xs font-medium text-neutral-700 mb-2">
                   Max Price
                 </label>
                 <input
@@ -221,6 +222,7 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
                   onChange={(e) => handlePriceChange('max', e.target.value)}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   placeholder="Rp 10,000,000"
+                  autoComplete="off"
                   aria-label="Maximum price filter"
                 />
               </div>
