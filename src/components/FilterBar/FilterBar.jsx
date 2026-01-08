@@ -78,9 +78,11 @@ const FilterBar = ({
           <label className="filter-label">Category</label>
           <div className="filter-options">
             {Object.values(batikCategories).map((category) => (
-              <label key={category} className="filter-checkbox">
+              <label key={category} htmlFor={`category-${category.replace(/\s+/g, '-').toLowerCase()}`} className="filter-checkbox">
                 <input
                   type="checkbox"
+                  id={`category-${category.replace(/\s+/g, '-').toLowerCase()}`}
+                  name={`category-${category.replace(/\s+/g, '-').toLowerCase()}`}
                   checked={filters.categories.includes(category)}
                   onChange={() => handleCategoryChange(category)}
                 />
@@ -95,9 +97,11 @@ const FilterBar = ({
           <label className="filter-label">Pattern</label>
           <div className="filter-options">
             {Object.values(batikPatterns).map((pattern) => (
-              <label key={pattern} className="filter-checkbox">
+              <label key={pattern} htmlFor={`pattern-${pattern.replace(/\s+/g, '-').toLowerCase()}`} className="filter-checkbox">
                 <input
                   type="checkbox"
+                  id={`pattern-${pattern.replace(/\s+/g, '-').toLowerCase()}`}
+                  name={`pattern-${pattern.replace(/\s+/g, '-').toLowerCase()}`}
                   checked={filters.patterns.includes(pattern)}
                   onChange={() => handlePatternChange(pattern)}
                 />
@@ -113,6 +117,7 @@ const FilterBar = ({
           <div className="price-inputs">
             <input
               type="number"
+              id="price-min"
               name="min"
               placeholder="Min"
               value={filters.priceRange.min || ''}
@@ -120,10 +125,12 @@ const FilterBar = ({
               className="price-input"
               min="0"
               step="100000"
+              aria-label="Minimum price"
             />
             <span className="price-separator">—</span>
             <input
               type="number"
+              id="price-max"
               name="max"
               placeholder="Max"
               value={filters.priceRange.max || ''}
@@ -131,6 +138,7 @@ const FilterBar = ({
               className="price-input"
               min="0"
               step="100000"
+              aria-label="Maximum price"
             />
           </div>
           <div className="price-suggestions">

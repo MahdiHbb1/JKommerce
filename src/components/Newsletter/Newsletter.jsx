@@ -52,11 +52,14 @@ const Newsletter = () => {
           <div className="input-wrapper">
             <input
               type="email"
+              id="newsletter-email"
+              name="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t('footer.emailPlaceholder')}
               className={`newsletter-input ${status === 'error' ? 'error' : ''}`}
               disabled={status === 'success'}
+              aria-label="Email address for newsletter"
             />
             <button 
               type="submit" 

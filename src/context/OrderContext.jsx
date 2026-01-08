@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, useRef } from 'react';
 
 const OrderContext = createContext();
 
@@ -11,23 +11,28 @@ export const useOrders = () => {
 };
 
 export const OrderProvider = ({ children }) => {
-  const [orders, setOrders] = useState([]);
-
-  // Load orders from localStorage on mount
-  useEffect(() => {
+  const [orders, setOrders] = useState(() => {
+    // Load orders from localStorage on initialization
     const savedOrders = localStorage.getItem('jk-orders');
     if (savedOrders) {
       try {
-        setOrders(JSON.parse(savedOrders));
+        return JSON.parse(savedOrders);
       } catch (error) {
         console.error('Error loading orders:', error);
-        setOrders([]);
+        return [];
       }
     }
-  }, []);
+    return [];
+  });
+  
+  const isFirstRender = useRef(true);
 
-  // Save orders to localStorage whenever they change
+  // Save orders to localStorage whenever they change (skip initial render)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     localStorage.setItem('jk-orders', JSON.stringify(orders));
   }, [orders]);
 

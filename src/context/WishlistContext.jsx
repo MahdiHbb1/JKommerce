@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, useRef } from 'react';
 
 const WishlistContext = createContext();
 
@@ -11,23 +11,28 @@ export const useWishlist = () => {
 };
 
 export const WishlistProvider = ({ children }) => {
-  const [wishlistItems, setWishlistItems] = useState([]);
-
-  // Load wishlist from localStorage on mount
-  useEffect(() => {
+  const [wishlistItems, setWishlistItems] = useState(() => {
+    // Load wishlist from localStorage on initialization
     const savedWishlist = localStorage.getItem('jk-wishlist');
     if (savedWishlist) {
       try {
-        setWishlistItems(JSON.parse(savedWishlist));
+        return JSON.parse(savedWishlist);
       } catch (error) {
         console.error('Error loading wishlist:', error);
-        setWishlistItems([]);
+        return [];
       }
     }
-  }, []);
+    return [];
+  });
+  
+  const isFirstRender = useRef(true);
 
-  // Save wishlist to localStorage whenever it changes
+  // Save wishlist to localStorage whenever it changes (skip initial render)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     localStorage.setItem('jk-wishlist', JSON.stringify(wishlistItems));
   }, [wishlistItems]);
 

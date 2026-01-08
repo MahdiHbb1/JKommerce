@@ -112,12 +112,14 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
             {/* Quantity Input */}
             <input
               type="number"
+              id={`cart-quantity-${id}`}
+              name="quantity"
               min="1"
               max="10"
               value={quantity}
               onChange={handleQuantityChange}
               className="w-12 text-center border-x border-neutral-300 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500"
-              aria-label="Quantity"
+              aria-label={`Quantity for ${name}`}
             />
 
             {/* Increase Button */}

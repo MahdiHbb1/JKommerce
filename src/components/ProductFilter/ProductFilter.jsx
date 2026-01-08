@@ -194,12 +194,15 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
                 </label>
                 <input
                   type="number"
+                  id="filter-price-min"
+                  name="price-min"
                   min="0"
                   step="100000"
                   value={filters.priceRange.min}
                   onChange={(e) => handlePriceChange('min', e.target.value)}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   placeholder="Rp 0"
+                  aria-label="Minimum price filter"
                 />
               </div>
 
@@ -210,12 +213,15 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
                 </label>
                 <input
                   type="number"
+                  id="filter-price-max"
+                  name="price-max"
                   min="0"
                   step="100000"
                   value={filters.priceRange.max}
                   onChange={(e) => handlePriceChange('max', e.target.value)}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   placeholder="Rp 10,000,000"
+                  aria-label="Maximum price filter"
                 />
               </div>
 

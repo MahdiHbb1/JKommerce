@@ -71,11 +71,14 @@ const SearchBar = ({ isMobile, onClose }) => {
       <form onSubmit={handleSearchSubmit} className="search-form">
         <input
           type="text"
+          id="search-batik"
+          name="search"
           placeholder="Search batik products..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
           autoComplete="off"
+          aria-label="Search batik products"
         />
         <button type="submit" className="search-button">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
