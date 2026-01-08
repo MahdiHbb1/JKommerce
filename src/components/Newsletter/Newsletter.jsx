@@ -59,6 +59,7 @@ const Newsletter = () => {
               placeholder={t('footer.emailPlaceholder')}
               className={`newsletter-input ${status === 'error' ? 'error' : ''}`}
               disabled={status === 'success'}
+              autoComplete="email"
               aria-label="Email address for newsletter"
             />
             <button 

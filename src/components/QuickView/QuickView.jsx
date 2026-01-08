@@ -200,7 +200,7 @@ const QuickView = ({ product, onClose }) => {
             {/* Size Options */}
             {product.sizes && product.sizes.length > 0 && (
               <div>
-                <label htmlFor="quickview-size" className="block text-sm font-medium text-gray-700 mb-2">
+                <label id="quickview-size" className="block text-sm font-medium text-gray-700 mb-2">
                   {t('product.size')}:
                 </label>
                 <div className="flex flex-wrap gap-2" role="group" aria-labelledby="quickview-size">
@@ -227,7 +227,7 @@ const QuickView = ({ product, onClose }) => {
             {/* Color Options */}
             {product.colors && product.colors.length > 0 && (
               <div>
-                <label htmlFor="quickview-color" className="block text-sm font-medium text-gray-700 mb-2">
+                <label id="quickview-color" className="block text-sm font-medium text-gray-700 mb-2">
                   {t('product.color')}:
                 </label>
                 <div className="flex flex-wrap gap-2" role="group" aria-labelledby="quickview-color">
