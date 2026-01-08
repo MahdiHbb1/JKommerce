@@ -117,7 +117,7 @@ const Checkout = () => {
       paymentMethod,
       subtotal,
       tax,
-      shipping,
+      shipping: shippingCost,
       total,
       orderDate: Date.now(),
       status: 'processing'
