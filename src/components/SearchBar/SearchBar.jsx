@@ -96,7 +96,7 @@ const SearchBar = ({ isMobile, onClose }) => {
                 className="search-result-item"
                 onClick={() => handleProductClick(product.id)}
               >
-                <img src={product.image} alt={product.name} className="result-image" />
+                <img src={product.images?.[0] || product.image} alt={product.name} className="result-image" />
                 <div className="result-info">
                   <h4 className="result-name">{product.name}</h4>
                   <p className="result-category">{product.category} · {product.technique}</p>

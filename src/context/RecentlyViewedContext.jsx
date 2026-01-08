@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 /**
@@ -20,22 +20,27 @@ const STORAGE_KEY = 'janoerkoening_recently_viewed';
 const MAX_ITEMS = 8;
 
 export const RecentlyViewedProvider = ({ children }) => {
-  const [recentlyViewed, setRecentlyViewed] = useState([]);
-
-  // Load from localStorage on mount
-  useEffect(() => {
+  const [recentlyViewed, setRecentlyViewed] = useState(() => {
+    // Load from localStorage on initialization
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        setRecentlyViewed(JSON.parse(stored));
+        return JSON.parse(stored);
       }
     } catch (error) {
       console.error('Error loading recently viewed:', error);
     }
-  }, []);
+    return [];
+  });
+  
+  const isFirstRender = useRef(true);
 
-  // Save to localStorage whenever it changes
+  // Save to localStorage whenever it changes (skip initial render)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(recentlyViewed));
     } catch (error) {
