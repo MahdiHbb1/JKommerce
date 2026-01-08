@@ -78,7 +78,7 @@ const ProductDetail = () => {
     } else {
       navigate('/shop');
     }
-  }, [id, navigate, addToRecentlyViewed, getRecentlyViewed]);
+  }, [id, navigate]);
 
   if (isLoading) {
     return (
@@ -398,23 +398,29 @@ const ProductDetail = () => {
               <h3>{t('product.writeReview')}</h3>
               <form onSubmit={handleReviewSubmit} className="review-form">
                 <div className="form-group">
-                  <label>{t('product.yourName')}</label>
+                  <label htmlFor="review-name">{t('product.yourName')}</label>
                   <input
                     type="text"
+                    id="review-name"
+                    name="name"
                     value={reviewForm.name}
                     onChange={(e) => setReviewForm({ ...reviewForm, name: e.target.value })}
                     placeholder={t('product.enterYourName')}
+                    autoComplete="name"
                     required
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>{t('product.rating')}</label>
-                  <div className="rating-input">
+                  <label htmlFor="review-rating">{t('product.rating')}</label>
+                  <div className="rating-input" role="radiogroup" aria-labelledby="review-rating">
                     {[5, 4, 3, 2, 1].map((star) => (
                       <button
                         key={star}
                         type="button"
+                        role="radio"
+                        aria-checked={reviewForm.rating === star}
+                        aria-label={`${star} stars`}
                         className={`star-btn ${reviewForm.rating >= star ? 'active' : ''}`}
                         onClick={() => setReviewForm({ ...reviewForm, rating: star })}
                       >
@@ -427,12 +433,15 @@ const ProductDetail = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>{t('product.yourReview')}</label>
+                  <label htmlFor="review-comment">{t('product.yourReview')}</label>
                   <textarea
+                    id="review-comment"
+                    name="comment"
                     value={reviewForm.comment}
                     onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
                     placeholder={t('product.shareExperience')}
                     rows="4"
+                    autoComplete="off"
                     required
                   />
                 </div>

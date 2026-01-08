@@ -272,6 +272,7 @@ const Checkout = () => {
                       name="fullName"
                       value={shippingInfo.fullName}
                       onChange={handleInputChange}
+                      autoComplete="name"
                       className={formErrors.fullName ? 'error' : ''}
                     />
                     {formErrors.fullName && <span className="error-message">{formErrors.fullName}</span>}
@@ -286,6 +287,7 @@ const Checkout = () => {
                         name="email"
                         value={shippingInfo.email}
                         onChange={handleInputChange}
+                        autoComplete="email"
                         className={formErrors.email ? 'error' : ''}
                       />
                       {formErrors.email && <span className="error-message">{formErrors.email}</span>}
@@ -300,6 +302,7 @@ const Checkout = () => {
                         value={shippingInfo.phone}
                         onChange={handleInputChange}
                         placeholder="08123456789"
+                        autoComplete="tel"
                         className={formErrors.phone ? 'error' : ''}
                       />
                       {formErrors.phone && <span className="error-message">{formErrors.phone}</span>}
@@ -314,6 +317,7 @@ const Checkout = () => {
                       value={shippingInfo.address}
                       onChange={handleInputChange}
                       rows="3"
+                      autoComplete="street-address"
                       className={formErrors.address ? 'error' : ''}
                     />
                     {formErrors.address && <span className="error-message">{formErrors.address}</span>}
@@ -328,6 +332,7 @@ const Checkout = () => {
                         name="city"
                         value={shippingInfo.city}
                         onChange={handleInputChange}
+                        autoComplete="address-level2"
                         className={formErrors.city ? 'error' : ''}
                       />
                       {formErrors.city && <span className="error-message">{formErrors.city}</span>}
@@ -341,6 +346,7 @@ const Checkout = () => {
                         name="province"
                         value={shippingInfo.province}
                         onChange={handleInputChange}
+                        autoComplete="address-level1"
                         className={formErrors.province ? 'error' : ''}
                       />
                       {formErrors.province && <span className="error-message">{formErrors.province}</span>}
@@ -356,6 +362,7 @@ const Checkout = () => {
                         onChange={handleInputChange}
                         placeholder="12345"
                         maxLength="5"
+                        autoComplete="postal-code"
                         className={formErrors.postalCode ? 'error' : ''}
                       />
                       {formErrors.postalCode && <span className="error-message">{formErrors.postalCode}</span>}

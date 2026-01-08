@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 
 /**
@@ -49,7 +49,7 @@ export const RecentlyViewedProvider = ({ children }) => {
   }, [recentlyViewed]);
 
   // Add product to recently viewed
-  const addToRecentlyViewed = (product) => {
+  const addToRecentlyViewed = useCallback((product) => {
     if (!product || !product.id) return;
 
     setRecentlyViewed((prev) => {
@@ -74,21 +74,21 @@ export const RecentlyViewedProvider = ({ children }) => {
       // Limit to MAX_ITEMS
       return updated.slice(0, MAX_ITEMS);
     });
-  };
+  }, []);
 
   // Clear all recently viewed
-  const clearRecentlyViewed = () => {
+  const clearRecentlyViewed = useCallback(() => {
     setRecentlyViewed([]);
     localStorage.removeItem(STORAGE_KEY);
-  };
+  }, []);
 
   // Get recently viewed products
-  const getRecentlyViewed = (limit) => {
+  const getRecentlyViewed = useCallback((limit) => {
     if (limit) {
       return recentlyViewed.slice(0, limit);
     }
     return recentlyViewed;
-  };
+  }, [recentlyViewed]);
 
   const value = {
     recentlyViewed,

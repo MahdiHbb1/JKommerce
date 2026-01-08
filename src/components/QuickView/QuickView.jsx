@@ -200,19 +200,22 @@ const QuickView = ({ product, onClose }) => {
             {/* Size Options */}
             {product.sizes && product.sizes.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="quickview-size" className="block text-sm font-medium text-gray-700 mb-2">
                   {t('product.size')}:
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2" role="group" aria-labelledby="quickview-size">
                   {product.sizes.map(size => (
                     <button
                       key={size}
+                      type="button"
                       className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
                         selectedSize === size
                           ? 'border-batik-orange bg-batik-orange text-white'
                           : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                       }`}
                       onClick={() => setSelectedSize(size)}
+                      aria-pressed={selectedSize === size}
+                      aria-label={`Select size ${size}`}
                     >
                       {size}
                     </button>
@@ -224,13 +227,14 @@ const QuickView = ({ product, onClose }) => {
             {/* Color Options */}
             {product.colors && product.colors.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="quickview-color" className="block text-sm font-medium text-gray-700 mb-2">
                   {t('product.color')}:
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2" role="group" aria-labelledby="quickview-color">
                   {product.colors.map(color => (
                     <button
                       key={color}
+                      type="button"
                       className={`w-10 h-10 rounded-full border-2 transition-all ${
                         selectedColor === color
                           ? 'border-batik-orange ring-2 ring-batik-orange ring-opacity-50'
@@ -239,7 +243,8 @@ const QuickView = ({ product, onClose }) => {
                       onClick={() => setSelectedColor(color)}
                       style={{ backgroundColor: color.toLowerCase() }}
                       title={color}
-                      aria-label={color}
+                      aria-label={`Select color ${color}`}
+                      aria-pressed={selectedColor === color}
                     />
                   ))}
                 </div>
