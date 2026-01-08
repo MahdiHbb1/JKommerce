@@ -75,7 +75,7 @@ const Wishlist = () => {
               </button>
 
               <Link to={`/product/${item.id}`} className="wishlist-image-link">
-                <img src={item.image} alt={item.name} className="wishlist-image" />
+                <img src={item.images?.[0] || item.image} alt={item.name} className="wishlist-image" />
               </Link>
 
               <div className="wishlist-info">
