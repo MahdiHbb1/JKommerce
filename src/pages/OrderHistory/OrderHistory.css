@@ -22,6 +22,11 @@
   margin: 0;
 }
 
+.order-lookup-link {
+  display: inline-flex;
+  margin-top: 16px;
+}
+
 /* Empty State */
 .empty-orders {
   text-align: center;

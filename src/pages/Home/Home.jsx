@@ -5,6 +5,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import ProductGrid from '../../components/ProductGrid/ProductGrid';
 import QuickView from '../../components/QuickView/QuickView';
 import Button from '../../components/Button/Button';
+import PageMeta from '../../components/Seo/PageMeta';
 import { getFeaturedProducts, getBestsellerProducts } from '../../data/products';
 import parangImg from '../../assets/images/motif-parang.jpg';
 import kawungImg from '../../assets/images/motif-kawung.jpg';
@@ -36,6 +37,10 @@ const Home = () => {
 
   return (
     <div className="home-page">
+      <PageMeta
+        title="Handcrafted batik collection"
+        description="Discover premium Indonesian batik pieces, curated patterns, and artisan craftsmanship at Janoer Koening."
+      />
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-background">

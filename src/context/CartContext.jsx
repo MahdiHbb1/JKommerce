@@ -22,6 +22,11 @@ export const CartProvider = ({ children }) => {
     }
   });
 
+  const getMaxQuantity = (product) => {
+    const stock = Number(product?.stock);
+    return Number.isFinite(stock) && stock > 0 ? stock : Infinity;
+  };
+
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     try {
@@ -34,6 +39,8 @@ export const CartProvider = ({ children }) => {
   // Add item to cart
   const addToCart = (product, quantity = 1, selectedSize = null, selectedColor = null) => {
     setCartItems(prevItems => {
+      const maxQuantity = getMaxQuantity(product);
+
       // Check if item already exists with same product, size, and color
       const existingItemIndex = prevItems.findIndex(
         item => 
@@ -45,16 +52,19 @@ export const CartProvider = ({ children }) => {
       if (existingItemIndex > -1) {
         // Update quantity of existing item
         const updatedItems = [...prevItems];
+        const nextQuantity = Math.min(updatedItems[existingItemIndex].quantity + quantity, maxQuantity);
         updatedItems[existingItemIndex] = {
           ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity + quantity
+          quantity: nextQuantity
         };
         return updatedItems;
       } else {
+        const nextQuantity = Math.min(quantity, maxQuantity);
+
         // Add new item
         return [...prevItems, {
           ...product,
-          quantity,
+          quantity: nextQuantity,
           selectedSize: selectedSize || (product.sizes ? product.sizes[0] : null),
           selectedColor: selectedColor || (product.colors ? product.colors[0] : null),
           cartItemId: `${product.id}-${selectedSize || 'default'}-${selectedColor || 'default'}-${Date.now()}`
@@ -76,11 +86,17 @@ export const CartProvider = ({ children }) => {
     }
 
     setCartItems(prevItems =>
-      prevItems.map(item =>
-        item.cartItemId === cartItemId
-          ? { ...item, quantity: newQuantity }
-          : item
-      )
+      prevItems.map(item => {
+        if (item.cartItemId !== cartItemId) {
+          return item;
+        }
+
+        const maxQuantity = getMaxQuantity(item);
+        return {
+          ...item,
+          quantity: Math.min(newQuantity, maxQuantity)
+        };
+      })
     );
   };
 
@@ -106,6 +122,7 @@ export const CartProvider = ({ children }) => {
 
   const value = {
     cartItems,
+    cart: cartItems, // Alias for backwards compatibility
     addToCart,
     removeFromCart,
     updateQuantity,

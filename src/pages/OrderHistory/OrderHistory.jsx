@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useOrders } from '../../context/OrderContext';
 import { useCart } from '../../context/CartContext';
 import { Link } from 'react-router-dom';
+import { useTranslation } from '../../hooks/useTranslation';
+import PageMeta from '../../components/Seo/PageMeta';
 import './OrderHistory.css';
 
 const OrderHistory = () => {
   const { orders } = useOrders();
   const { addToCart } = useCart();
+  const { t } = useTranslation();
   const [expandedOrder, setExpandedOrder] = useState(null);
 
   const toggleOrderDetails = (orderId) => {
@@ -45,10 +48,14 @@ const OrderHistory = () => {
   if (orders.length === 0) {
     return (
       <div className="order-history-page">
+        <PageMeta
+          title="Order history"
+          description="Review your past batik orders or use guest lookup to find a specific order."
+        />
         <div className="container">
           <div className="order-header">
-            <h1>Order History</h1>
-            <p className="order-subtitle">Track and manage your orders</p>
+            <h1>{t('orders.orderHistory')}</h1>
+            <p className="order-subtitle">{t('orders.guestLookupDescription')}</p>
           </div>
 
           <div className="empty-orders">
@@ -58,10 +65,13 @@ const OrderHistory = () => {
                 <circle cx="12" cy="13" r="3" stroke="currentColor" strokeWidth="2" fill="none"/>
               </svg>
             </div>
-            <h2>No orders yet</h2>
-            <p>Start shopping and your orders will appear here</p>
+            <h2>{t('orders.empty')}</h2>
+            <p>{t('orders.emptyMessage')}</p>
             <Link to="/shop" className="btn btn-primary">
-              Start Shopping
+              {t('home.shopNow')}
+            </Link>
+            <Link to="/order-lookup" className="btn btn-outline">
+              {t('orders.guestLookupCta')}
             </Link>
           </div>
         </div>
@@ -71,10 +81,17 @@ const OrderHistory = () => {
 
   return (
     <div className="order-history-page">
+      <PageMeta
+        title="Order history"
+        description="Review your past batik orders or use guest lookup to find a specific order."
+      />
       <div className="container">
         <div className="order-header">
-          <h1>Order History</h1>
+          <h1>{t('orders.orderHistory')}</h1>
           <p className="order-subtitle">{orders.length} {orders.length === 1 ? 'order' : 'orders'} placed</p>
+          <Link to="/order-lookup" className="btn btn-outline order-lookup-link">
+            {t('orders.guestLookupCta')}
+          </Link>
         </div>
 
         <div className="orders-list">

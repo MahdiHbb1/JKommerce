@@ -4,6 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { useToast } from '../../context/ToastContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import Button from '../../components/Button/Button';
+import PageMeta from '../../components/Seo/PageMeta';
 import './Cart.css';
 
 const Cart = () => {
@@ -35,6 +36,10 @@ const Cart = () => {
   if (cartItems.length === 0) {
     return (
       <div className="cart-page">
+        <PageMeta
+          title="Your cart"
+          description="Review the items in your batik cart before checking out."
+        />
         <div className="container">
           <div className="empty-cart">
             <div className="empty-cart-icon">
@@ -60,6 +65,10 @@ const Cart = () => {
 
   return (
     <div className="cart-page">
+      <PageMeta
+        title="Your cart"
+        description="Review the items in your batik cart before checking out."
+      />
       <div className="container">
         <div className="cart-header">
           <h1>{t('cart.title')}</h1>

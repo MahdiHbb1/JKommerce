@@ -1,6 +1,72 @@
 import { createContext, useState, useContext, useEffect, useRef } from 'react';
+import { supabase, isSupabaseConfigured, SUPABASE_ORDERS_TABLE } from '../lib/supabaseClient';
 
 const OrderContext = createContext();
+
+const LOCAL_STORAGE_KEY = 'jk-orders';
+
+const safeParseOrders = (rawValue) => {
+  if (!rawValue) {
+    return [];
+  }
+
+  try {
+    return JSON.parse(rawValue);
+  } catch (error) {
+    console.error('Error loading orders:', error);
+    return [];
+  }
+};
+
+const normalizeOrder = (orderRecord) => {
+  const payload = orderRecord?.payload && typeof orderRecord.payload === 'object'
+    ? orderRecord.payload
+    : orderRecord;
+
+  const orderNumber = payload.orderNumber || orderRecord?.order_number || payload.id || orderRecord?.id;
+
+  return {
+    ...payload,
+    id: payload.id || orderRecord?.id || orderNumber,
+    orderNumber,
+    orderDate: payload.orderDate || orderRecord?.created_at || Date.now(),
+    status: payload.status || orderRecord?.status || 'processing'
+  };
+};
+
+const mergeOrders = (primaryOrders, secondaryOrders) => {
+  const orderMap = new Map();
+
+  [...secondaryOrders, ...primaryOrders].forEach((order) => {
+    const key = order.orderNumber || order.id;
+    if (!key) {
+      return;
+    }
+
+    orderMap.set(key, {
+      ...(orderMap.get(key) || {}),
+      ...order
+    });
+  });
+
+  return Array.from(orderMap.values()).sort((left, right) => {
+    const leftDate = new Date(left.orderDate || 0).getTime();
+    const rightDate = new Date(right.orderDate || 0).getTime();
+    return rightDate - leftDate;
+  });
+};
+
+const toSupabaseRow = (orderData) => ({
+  order_number: orderData.orderNumber,
+  email: orderData.shippingInfo?.email || '',
+  status: orderData.status || 'processing',
+  payload: {
+    ...orderData,
+    id: orderData.id || orderData.orderNumber,
+    orderNumber: orderData.orderNumber,
+    orderDate: orderData.orderDate || Date.now()
+  }
+});
 
 export const useOrders = () => {
   const context = useContext(OrderContext);
@@ -12,39 +78,94 @@ export const useOrders = () => {
 
 export const OrderProvider = ({ children }) => {
   const [orders, setOrders] = useState(() => {
-    // Load orders from localStorage on initialization
-    const savedOrders = localStorage.getItem('jk-orders');
-    if (savedOrders) {
-      try {
-        return JSON.parse(savedOrders);
-      } catch (error) {
-        console.error('Error loading orders:', error);
-        return [];
-      }
+    const savedOrders = safeParseOrders(localStorage.getItem(LOCAL_STORAGE_KEY));
+    if (Array.isArray(savedOrders)) {
+      return savedOrders;
     }
     return [];
   });
-  
-  const isFirstRender = useRef(true);
 
-  // Save orders to localStorage whenever they change (skip initial render)
+  const hasHydratedRemoteOrders = useRef(false);
+
+  // Save orders to localStorage whenever they change.
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    localStorage.setItem('jk-orders', JSON.stringify(orders));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(orders));
   }, [orders]);
 
+  // Hydrate orders from Supabase when configured, but keep localStorage as the fallback source.
+  useEffect(() => {
+    let isActive = true;
+
+    const hydrateRemoteOrders = async () => {
+      if (!isSupabaseConfigured || !supabase || hasHydratedRemoteOrders.current) {
+        return;
+      }
+
+      hasHydratedRemoteOrders.current = true;
+
+      try {
+        const { data, error } = await supabase
+          .from(SUPABASE_ORDERS_TABLE)
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        if (!isActive || !Array.isArray(data)) {
+          return;
+        }
+
+        const remoteOrders = data.map(normalizeOrder);
+        setOrders((currentOrders) => mergeOrders(remoteOrders, currentOrders));
+      } catch (error) {
+        console.error('Error loading orders from Supabase:', error);
+      }
+    };
+
+    hydrateRemoteOrders();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
   // Add new order
-  const addOrder = (orderData) => {
+  const addOrder = async (orderData) => {
     const newOrder = {
       ...orderData,
-      id: orderData.orderNumber || 'JK' + Date.now().toString().slice(-8),
+      id: orderData.orderNumber || `JK${Date.now().toString().slice(-8)}`,
       orderDate: Date.now(),
       status: 'processing'
     };
-    setOrders(prev => [newOrder, ...prev]);
+
+    setOrders((prevOrders) => mergeOrders([newOrder], prevOrders));
+
+    if (!isSupabaseConfigured || !supabase) {
+      return newOrder;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from(SUPABASE_ORDERS_TABLE)
+        .upsert(toSupabaseRow(newOrder), { onConflict: 'order_number' })
+        .select('*')
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        const remoteOrder = normalizeOrder(data);
+        setOrders((prevOrders) => mergeOrders([remoteOrder], prevOrders));
+      }
+    } catch (error) {
+      console.error('Error saving order to Supabase:', error);
+    }
+
+    return newOrder;
   };
 
   // Get order by ID

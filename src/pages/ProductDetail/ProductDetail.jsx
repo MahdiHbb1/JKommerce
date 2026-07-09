@@ -9,6 +9,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import Button from '../../components/Button/Button';
 import ProductGrid from '../../components/ProductGrid/ProductGrid';
 import { ProductDetailSkeleton } from '../../components/Skeleton/Skeleton';
+import PageMeta from '../../components/Seo/PageMeta';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
@@ -83,6 +84,10 @@ const ProductDetail = () => {
   if (isLoading) {
     return (
       <div className="product-detail-page">
+        <PageMeta
+          title="Product details"
+          description="View handcrafted batik product details, sizes, colors, reviews, and related items."
+        />
         <div className="container">
           <ProductDetailSkeleton />
         </div>
@@ -187,6 +192,10 @@ const ProductDetail = () => {
 
   return (
     <div className="product-detail-page">
+      <PageMeta
+        title={product.name}
+        description={product.description}
+      />
       <div className="container">
         {/* Breadcrumb */}
         <nav className="breadcrumb">

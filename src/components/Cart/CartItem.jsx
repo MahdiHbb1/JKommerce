@@ -9,6 +9,7 @@ import Button from '../ui/Button';
 
 const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
   const { id, name, price, image, size, color, quantity } = item;
+  const maxQuantity = Number.isFinite(item.stock) && item.stock > 0 ? item.stock : 10;
 
   const handleDecrease = () => {
     if (quantity > 1) {
@@ -17,16 +18,15 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
   };
 
   const handleIncrease = () => {
-    // Max quantity limit of 10
-    if (quantity < 10) {
+    if (quantity < maxQuantity) {
       onUpdateQuantity(id, quantity + 1);
     }
   };
 
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value, 10);
-    if (!isNaN(value) && value > 0 && value <= 10) {
-      onUpdateQuantity(id, value);
+    if (!isNaN(value) && value > 0) {
+      onUpdateQuantity(id, Math.min(value, maxQuantity));
     }
   };
 
@@ -115,7 +115,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
               id={`cart-quantity-${id}`}
               name="quantity"
               min="1"
-              max="10"
+              max={maxQuantity}
               value={quantity}
               onChange={handleQuantityChange}
               className="w-12 text-center border-x border-neutral-300 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -125,7 +125,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
             {/* Increase Button */}
             <button
               onClick={handleIncrease}
-              disabled={quantity >= 10}
+              disabled={quantity >= maxQuantity}
               className="px-3 py-1 bg-neutral-50 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               aria-label="Increase quantity"
             >

@@ -1,6 +1,7 @@
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
 import { Link } from 'react-router-dom';
+import PageMeta from '../../components/Seo/PageMeta';
 import './Wishlist.css';
 
 const Wishlist = () => {
@@ -23,6 +24,10 @@ const Wishlist = () => {
   if (wishlistItems.length === 0) {
     return (
       <div className="wishlist-page">
+        <PageMeta
+          title="Wishlist"
+          description="Save your favorite batik pieces and revisit them later."
+        />
         <div className="container">
           <div className="wishlist-header">
             <h1>My Wishlist</h1>
@@ -48,6 +53,10 @@ const Wishlist = () => {
 
   return (
     <div className="wishlist-page">
+      <PageMeta
+        title="Wishlist"
+        description="Save your favorite batik pieces and revisit them later."
+      />
       <div className="container">
         <div className="wishlist-header">
           <div>

@@ -1,9 +1,15 @@
 import { Link } from 'react-router-dom';
+import PageMeta from '../../components/Seo/PageMeta';
 import './NotFound.css';
 
 const NotFound = () => {
   return (
     <div className="not-found-page">
+      <PageMeta
+        title="Page not found"
+        description="The page you were looking for could not be found."
+        noIndex={true}
+      />
       <div className="container">
         <div className="not-found-content">
           <div className="not-found-graphic">

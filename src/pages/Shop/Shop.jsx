@@ -10,6 +10,7 @@ import Pagination from '../../components/Pagination/Pagination';
 import { ProductGridSkeleton } from '../../components/Skeleton/Skeleton';
 import Button from '../../components/ui/Button';
 import products from '../../data/products';
+import PageMeta from '../../components/Seo/PageMeta';
 
 const Shop = () => {
   const { addToCart } = useCart();
@@ -185,6 +186,10 @@ const Shop = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <PageMeta
+        title="Shop batik collection"
+        description="Browse batik tulis, batik cap, and batik printing pieces with filters, sorting, and quick view."
+      />
       <div className="container mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="mb-8">

@@ -5,6 +5,7 @@ import { useOrders } from '../../context/OrderContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import Button from '../../components/Button/Button';
 import { formatPrice } from '../../data/products';
+import PageMeta from '../../components/Seo/PageMeta';
 import './Checkout.css';
 
 const Checkout = () => {
@@ -15,6 +16,17 @@ const Checkout = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
+  const [isSnapReady, setIsSnapReady] = useState(false);
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [gatewayMessage, setGatewayMessage] = useState('');
+  const [shippingCost, setShippingCost] = useState(25000);
+  const [isShippingQuoteLoading, setIsShippingQuoteLoading] = useState(false);
+  const [shippingQuoteMessage, setShippingQuoteMessage] = useState('');
+  const [voucherCode, setVoucherCode] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
+  const [voucherMessage, setVoucherMessage] = useState('');
+  const whatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER;
 
   // Form states
   const [shippingInfo, setShippingInfo] = useState({
@@ -27,7 +39,7 @@ const Checkout = () => {
     postalCode: ''
   });
 
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('midtrans-snap');
   const [formErrors, setFormErrors] = useState({});
 
   // Redirect if cart is empty (but not after order is confirmed)
@@ -41,8 +53,201 @@ const Checkout = () => {
   const subtotal = cart ? getTotalPrice() : 0;
   const taxRate = 0.11; // 11% PPN
   const tax = subtotal * taxRate;
-  const shippingCost = subtotal >= 1000000 ? 0 : 25000; // Free shipping over 1M
-  const total = subtotal + tax + shippingCost;
+  const summaryItemCount = cart ? cart.reduce((count, item) => count + item.quantity, 0) : 0;
+  const midtransClientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
+  const midtransTokenEndpoint = import.meta.env.VITE_MIDTRANS_TOKEN_ENDPOINT;
+  const midtransSnapUrl = import.meta.env.VITE_MIDTRANS_SNAP_URL || 'https://app.sandbox.midtrans.com/snap/snap.js';
+  const shippingQuoteEndpoint = import.meta.env.VITE_SHIPPING_QUOTE_ENDPOINT;
+  const isMidtransConfigured = Boolean(midtransClientKey && midtransTokenEndpoint);
+  const isShippingQuoteConfigured = Boolean(shippingQuoteEndpoint);
+  const voucherCatalog = {
+    BATIK10: { type: 'percent', value: 10 },
+    JKM50: { type: 'fixed', value: 50000 },
+    HEMAT25: { type: 'fixed', value: 25000 }
+  };
+
+  const discountAmount = appliedVoucher
+    ? appliedVoucher.type === 'percent'
+      ? Math.round(subtotal * (appliedVoucher.value / 100))
+      : appliedVoucher.value
+    : 0;
+  const total = Math.max(subtotal + tax + shippingCost - discountAmount, 0);
+
+  const generateOrderNumber = () => {
+    const randomSource = typeof crypto !== 'undefined' ? crypto : window.crypto;
+
+    if (randomSource?.randomUUID) {
+      return `JK-${randomSource.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
+    }
+
+    if (randomSource?.getRandomValues) {
+      const values = new Uint8Array(8);
+      randomSource.getRandomValues(values);
+      return `JK-${Array.from(values, (value) => value.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+    }
+
+    return `JK-${Date.now().toString(36).toUpperCase()}`;
+  };
+
+  const buildOrderPayload = (orderNum) => ({
+    order_id: orderNum,
+    gross_amount: Math.round(total),
+    currency: 'IDR',
+    customer_details: {
+      first_name: shippingInfo.fullName,
+      email: shippingInfo.email,
+      phone: shippingInfo.phone,
+      shipping_address: shippingInfo.address,
+      city: shippingInfo.city,
+      province: shippingInfo.province,
+      postal_code: shippingInfo.postalCode
+    },
+    item_details: (cart || []).map((item) => ({
+      id: String(item.id),
+      price: Math.round(item.price),
+      quantity: item.quantity,
+      name: item.name.slice(0, 50)
+    }))
+  });
+
+  const loadSnapScript = () => {
+    if (window.snap) {
+      setIsSnapReady(true);
+      return Promise.resolve();
+    }
+
+    const existingScript = document.querySelector('script[data-midtrans-snap="true"]');
+    if (existingScript) {
+      return new Promise((resolve, reject) => {
+        if (window.snap) {
+          setIsSnapReady(true);
+          resolve();
+          return;
+        }
+
+        existingScript.addEventListener('load', () => {
+          setIsSnapReady(true);
+          resolve();
+        }, { once: true });
+        existingScript.addEventListener('error', () => reject(new Error('Failed to load Snap.js')), { once: true });
+      });
+    }
+
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = midtransSnapUrl;
+      script.async = true;
+      script.setAttribute('data-midtrans-snap', 'true');
+      if (midtransClientKey) {
+        script.setAttribute('data-client-key', midtransClientKey);
+      }
+      script.onload = () => {
+        setIsSnapReady(true);
+        resolve();
+      };
+      script.onerror = () => reject(new Error('Failed to load Snap.js'));
+      document.head.appendChild(script);
+    });
+  };
+
+  const requestSnapToken = async (orderNum) => {
+    const response = await fetch(midtransTokenEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(buildOrderPayload(orderNum))
+    });
+
+    if (!response.ok) {
+      throw new Error('Token endpoint rejected the request');
+    }
+
+    const data = await response.json();
+    if (!data?.token) {
+      throw new Error('Midtrans token not returned');
+    }
+
+    return data.token;
+  };
+
+  const finalizePaidOrder = (orderNum, paymentState = 'processing') => {
+    const orderData = {
+      orderNumber: orderNum,
+      items: cart,
+      shippingInfo,
+      paymentMethod: 'midtrans-snap',
+      subtotal,
+      tax,
+      shipping: shippingCost,
+      discountCode: appliedVoucher ? appliedVoucher.code : null,
+      discountAmount,
+      total,
+      orderDate: Date.now(),
+      status: paymentState
+    };
+
+    addOrder(orderData);
+    setOrderNumber(orderNum);
+    setOrderConfirmed(true);
+
+    setTimeout(() => {
+      clearCart();
+    }, 500);
+  };
+
+  const resolveShippingCost = async () => {
+    if (!isShippingQuoteConfigured) {
+      setShippingCost(25000);
+      setShippingQuoteMessage(t('checkout.shippingQuoteFallback'));
+      return;
+    }
+
+    setIsShippingQuoteLoading(true);
+    setShippingQuoteMessage('');
+
+    try {
+      const response = await fetch(shippingQuoteEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          destination_city: shippingInfo.city,
+          destination_province: shippingInfo.province,
+          postal_code: shippingInfo.postalCode,
+          subtotal
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Shipping quote request failed');
+      }
+
+      const data = await response.json();
+      const quotedCost = Number(data?.shippingCost ?? data?.cost ?? data?.price);
+
+      if (!Number.isFinite(quotedCost) || quotedCost < 0) {
+        throw new Error('Shipping quote response was invalid');
+      }
+
+      setShippingCost(quotedCost);
+      setShippingQuoteMessage(t('checkout.shippingQuoteReady'));
+    } catch (error) {
+      setShippingCost(25000);
+      setShippingQuoteMessage(t('checkout.shippingQuoteUnavailable'));
+    } finally {
+      setIsShippingQuoteLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentStep === 2 && isMidtransConfigured) {
+      loadSnapScript().catch(() => {
+        setGatewayMessage(t('checkout.snapUnavailable'));
+      });
+    }
+  }, [currentStep, isMidtransConfigured]);
 
   // Validate shipping form
   const validateShippingInfo = () => {
@@ -89,58 +294,120 @@ const Checkout = () => {
   };
 
   // Navigate to next step
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (currentStep === 1) {
       if (validateShippingInfo()) {
+        await resolveShippingCost();
         setCurrentStep(2);
       }
     } else if (currentStep === 2) {
-      if (paymentMethod) {
-        setCurrentStep(3);
-      } else {
-        alert(t('checkout.selectPaymentMethod') || 'Mohon pilih metode pembayaran');
-      }
+      setCurrentStep(3);
     }
   };
 
+  const handleApplyVoucher = () => {
+    const normalizedCode = voucherCode.trim().toUpperCase();
+    const matchedVoucher = voucherCatalog[normalizedCode];
+
+    if (!matchedVoucher) {
+      setAppliedVoucher(null);
+      setVoucherMessage(t('checkout.invalidVoucher'));
+      return;
+    }
+
+    setAppliedVoucher({ code: normalizedCode, ...matchedVoucher });
+    setVoucherMessage(t('checkout.voucherApplied', { code: normalizedCode }));
+  };
+
+  const handleRemoveVoucher = () => {
+    setVoucherCode('');
+    setAppliedVoucher(null);
+    setVoucherMessage('');
+  };
+
+  const buildWhatsAppMessage = (referenceNumber) => {
+    const lines = [
+      'Halo, saya ingin memesan batik melalui WhatsApp.',
+      `Referensi: ${referenceNumber}`,
+      '',
+      'Ringkasan pesanan:'
+    ];
+
+    (cart || []).forEach((item) => {
+      const variantParts = [];
+      if (item.selectedSize) variantParts.push(`Size ${item.selectedSize}`);
+      if (item.selectedColor) variantParts.push(`Color ${item.selectedColor}`);
+
+      lines.push(`- ${item.name} x ${item.quantity}${variantParts.length ? ` (${variantParts.join(', ')})` : ''}`);
+    });
+
+    lines.push(
+      '',
+      `Subtotal: ${formatPrice(subtotal)}`,
+      `Pajak: ${formatPrice(tax)}`,
+      `Ongkir: ${shippingCost === 0 ? t('cart.freeShipping') : formatPrice(shippingCost)}`
+    );
+
+    if (discountAmount > 0) {
+      lines.push(`Diskon: -${formatPrice(discountAmount)}`);
+    }
+
+    lines.push(`Total: ${formatPrice(total)}`);
+    lines.push('', `Nama: ${shippingInfo.fullName}`, `Email: ${shippingInfo.email}`, `Phone: ${shippingInfo.phone}`);
+
+    return lines.join('\n');
+  };
+
+  const handleWhatsAppFallback = () => {
+    if (!whatsappNumber) {
+      setGatewayMessage(t('checkout.whatsappUnavailable'));
+      return;
+    }
+
+    const referenceNumber = orderNumber || generateOrderNumber();
+    const encodedMessage = encodeURIComponent(buildWhatsAppMessage(referenceNumber));
+    const normalizedNumber = whatsappNumber.replace(/[^\d]/g, '');
+    const whatsappUrl = `https://wa.me/${normalizedNumber}?text=${encodedMessage}`;
+
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  };
+
   // Handle order submission
-  const handlePlaceOrder = () => {
-    // Generate order number
-    const orderNum = 'JK' + Date.now().toString().slice(-8);
-    setOrderNumber(orderNum);
-    
-    // Save order to history
-    const orderData = {
-      orderNumber: orderNum,
-      items: cart,
-      shippingInfo,
-      paymentMethod,
-      subtotal,
-      tax,
-      shipping: shippingCost,
-      total,
-      orderDate: Date.now(),
-      status: 'processing'
-    };
-    addOrder(orderData);
-    
-    setOrderConfirmed(true);
-    
-    // Clear cart after successful order
-    setTimeout(() => {
-      clearCart();
-    }, 500);
+  const handlePlaceOrder = async () => {
+    if (!isMidtransConfigured) {
+      setGatewayMessage(t('checkout.snapUnavailable'));
+      return;
+    }
+
+    try {
+      setIsSubmittingPayment(true);
+      setGatewayMessage('');
+      await loadSnapScript();
+
+      const orderNum = generateOrderNumber();
+      const token = await requestSnapToken(orderNum);
+
+      if (!window.snap?.pay) {
+        throw new Error('Snap.js is not available');
+      }
+
+      window.snap.pay(token, {
+        onSuccess: () => finalizePaidOrder(orderNum, 'paid'),
+        onPending: () => finalizePaidOrder(orderNum, 'pending'),
+        onError: () => setGatewayMessage(t('common.error')),
+        onClose: () => setGatewayMessage(t('checkout.snapIntegrationNote'))
+      });
+    } catch (error) {
+      setGatewayMessage(error instanceof Error ? error.message : t('common.error'));
+    } finally {
+      setIsSubmittingPayment(false);
+    }
   };
 
   // Helper function for payment method names
   const getPaymentMethodName = (method) => {
     const methods = {
-      'bank-transfer': t('checkout.bankTransfer'),
-      'credit-card': t('checkout.creditCard'),
-      'gopay': t('checkout.gopay'),
-      'ovo': t('checkout.ovo'),
-      'dana': t('checkout.dana'),
-      'cod': t('checkout.cod')
+      'midtrans-snap': t('checkout.midtransSnap')
     };
     return methods[method] || method;
   };
@@ -148,34 +415,11 @@ const Checkout = () => {
   // Render payment instructions based on selected method
   const renderPaymentInstructions = () => {
     switch (paymentMethod) {
-      case 'bank-transfer':
+      case 'midtrans-snap':
         return (
           <div className="instructions-content">
-            <p>Please transfer the total amount to:</p>
-            <div className="bank-details">
-              <strong>Bank BCA</strong><br />
-              Account: 1234567890<br />
-              Name: PT Janoer Koening Batik<br />
-              <strong>Bank Mandiri</strong><br />
-              Account: 9876543210<br />
-              Name: PT Janoer Koening Batik
-            </div>
-            <p className="note">Include your order number in the transfer notes.</p>
+            <p>{t('checkout.snapIntegrationNote')}</p>
           </div>
-        );
-      case 'credit-card':
-        return (
-          <p>You will receive a payment link via email to complete your payment securely.</p>
-        );
-      case 'gopay':
-      case 'ovo':
-      case 'dana':
-        return (
-          <p>You will receive a payment notification in your {getPaymentMethodName(paymentMethod)} app.</p>
-        );
-      case 'cod':
-        return (
-          <p>Please prepare the exact amount. Payment will be collected upon delivery.</p>
         );
       default:
         return null;
@@ -186,6 +430,10 @@ const Checkout = () => {
   if (orderConfirmed) {
     return (
       <div className="checkout-page">
+        <PageMeta
+          title="Order confirmed"
+          description="Your batik order has been placed successfully."
+        />
         <div className="container">
           <div className="order-confirmation">
             <div className="confirmation-icon">✓</div>
@@ -225,7 +473,11 @@ const Checkout = () => {
               <Button variant="outline" size="large" onClick={() => window.print()}>
                 Cetak Detail Pesanan
               </Button>
+              <Button variant="outline" size="large" onClick={handleWhatsAppFallback}>
+                {t('checkout.whatsappFallback')}
+              </Button>
             </div>
+            <p className="confirmation-note">{t('checkout.whatsappFallbackNote')}</p>
           </div>
         </div>
       </div>
@@ -235,6 +487,10 @@ const Checkout = () => {
   // Main Checkout View
   return (
     <div className="checkout-page">
+      <PageMeta
+        title="Checkout"
+        description="Complete your order securely with delivery details, shipping quote, and payment options."
+      />
       <div className="container">
         <h1 className="checkout-title">{t('checkout.title')}</h1>
 
@@ -242,17 +498,17 @@ const Checkout = () => {
         <div className="checkout-progress">
           <div className={`progress-step ${currentStep >= 1 ? 'active' : ''} ${currentStep > 1 ? 'completed' : ''}`}>
             <div className="step-number">1</div>
-            <div className="step-label">Pengiriman</div>
+            <div className="step-label">{t('checkout.step1')}</div>
           </div>
           <div className="progress-line"></div>
           <div className={`progress-step ${currentStep >= 2 ? 'active' : ''} ${currentStep > 2 ? 'completed' : ''}`}>
             <div className="step-number">2</div>
-            <div className="step-label">Pembayaran</div>
+            <div className="step-label">{t('checkout.step2')}</div>
           </div>
           <div className="progress-line"></div>
           <div className={`progress-step ${currentStep >= 3 ? 'active' : ''}`}>
             <div className="step-number">3</div>
-            <div className="step-label">Tinjauan</div>
+            <div className="step-label">{t('checkout.step3')}</div>
           </div>
         </div>
 
@@ -303,6 +559,7 @@ const Checkout = () => {
                         onChange={handleInputChange}
                         placeholder="08123456789"
                         autoComplete="tel"
+                        inputMode="tel"
                         className={formErrors.phone ? 'error' : ''}
                       />
                       {formErrors.phone && <span className="error-message">{formErrors.phone}</span>}
@@ -363,6 +620,7 @@ const Checkout = () => {
                         placeholder="12345"
                         maxLength="5"
                         autoComplete="postal-code"
+                        inputMode="numeric"
                         className={formErrors.postalCode ? 'error' : ''}
                       />
                       {formErrors.postalCode && <span className="error-message">{formErrors.postalCode}</span>}
@@ -375,99 +633,55 @@ const Checkout = () => {
             {/* Step 2: Payment Method */}
             {currentStep === 2 && (
               <div className="checkout-section">
-                <h2>Payment Method</h2>
-                <div className="payment-methods">
-                  <label className={`payment-option ${paymentMethod === 'bank-transfer' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="bank-transfer"
-                      checked={paymentMethod === 'bank-transfer'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <div className="payment-info">
-                      <strong>Bank Transfer</strong>
-                      <span>BCA, Mandiri, BNI</span>
-                    </div>
-                  </label>
-
-                  <label className={`payment-option ${paymentMethod === 'credit-card' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="credit-card"
-                      checked={paymentMethod === 'credit-card'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <div className="payment-info">
-                      <strong>Credit/Debit Card</strong>
-                      <span>Visa, Mastercard, JCB</span>
-                    </div>
-                  </label>
-
-                  <label className={`payment-option ${paymentMethod === 'gopay' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="gopay"
-                      checked={paymentMethod === 'gopay'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <div className="payment-info">
-                      <strong>GoPay</strong>
-                      <span>E-wallet payment</span>
-                    </div>
-                  </label>
-
-                  <label className={`payment-option ${paymentMethod === 'ovo' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="ovo"
-                      checked={paymentMethod === 'ovo'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <div className="payment-info">
-                      <strong>OVO</strong>
-                      <span>E-wallet payment</span>
-                    </div>
-                  </label>
-
-                  <label className={`payment-option ${paymentMethod === 'dana' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="dana"
-                      checked={paymentMethod === 'dana'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <div className="payment-info">
-                      <strong>DANA</strong>
-                      <span>E-wallet payment</span>
-                    </div>
-                  </label>
-
-                  <label className={`payment-option ${paymentMethod === 'cod' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="cod"
-                      checked={paymentMethod === 'cod'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <div className="payment-info">
-                      <strong>Cash on Delivery</strong>
-                      <span>Pay when you receive</span>
-                    </div>
-                  </label>
+                <h2>{t('checkout.paymentMethod')}</h2>
+                <div className="payment-gateway-card">
+                  <div className="payment-info">
+                    <strong>{t('checkout.snapSandboxTitle')}</strong>
+                    <span>{t('checkout.snapSandboxDesc')}</span>
+                  </div>
+                  <div className="payment-gateway-actions">
+                    <Button
+                      variant="outline"
+                      size="large"
+                      onClick={() => setCurrentStep(3)}
+                    >
+                      {t('checkout.continue')}
+                    </Button>
+                  </div>
                 </div>
+                <div className="voucher-panel">
+                  <div className="voucher-row">
+                    <input
+                      type="text"
+                      value={voucherCode}
+                      onChange={(e) => setVoucherCode(e.target.value)}
+                      placeholder={t('checkout.voucherCode')}
+                      aria-label={t('checkout.voucherCode')}
+                      autoComplete="off"
+                    />
+                    <Button variant="outline" size="large" onClick={handleApplyVoucher}>
+                      {t('checkout.applyVoucher')}
+                    </Button>
+                  </div>
+                  {appliedVoucher && (
+                    <div className="voucher-active">
+                      <span>{appliedVoucher.code}</span>
+                      <button type="button" className="voucher-remove" onClick={handleRemoveVoucher}>
+                        {t('checkout.removeVoucher')}
+                      </button>
+                    </div>
+                  )}
+                  {voucherMessage && <p className={appliedVoucher ? 'gateway-note' : 'gateway-message'}>{voucherMessage}</p>}
+                </div>
+                {gatewayMessage && <p className="gateway-message">{gatewayMessage}</p>}
+                <p className="gateway-note">{t('checkout.snapIntegrationNote')}</p>
               </div>
             )}
 
             {/* Step 3: Order Review */}
             {currentStep === 3 && (
               <div className="checkout-section">
-                <h2>Review Your Order</h2>
+                <h2>{t('checkout.orderReview')}</h2>
                 
                 <div className="review-section">
                   <h3>Shipping Address</h3>
@@ -504,14 +718,14 @@ const Checkout = () => {
                   <div className="review-items">
                     {cart && cart.map((item) => (
                       <div key={item.cartItemId} className="review-item">
-                        <img src={item.product.images[0]} alt={item.product.name} />
+                        <img src={item.images?.[0] || item.image} alt={item.name} />
                         <div className="review-item-details">
-                          <h4>{item.product.name}</h4>
-                          <p>Size: {item.size} | Color: {item.color}</p>
+                          <h4>{item.name}</h4>
+                          <p>Size: {item.selectedSize} | Color: {item.selectedColor}</p>
                           <p>Quantity: {item.quantity}</p>
                         </div>
                         <div className="review-item-price">
-                          {formatPrice(item.product.price * item.quantity)}
+                          {formatPrice(item.price * item.quantity)}
                         </div>
                       </div>
                     ))}
@@ -528,7 +742,7 @@ const Checkout = () => {
                   size="large"
                   onClick={() => setCurrentStep(currentStep - 1)}
                 >
-                  Back
+                  {t('checkout.back')}
                 </Button>
               )}
               {currentStep < 3 ? (
@@ -537,66 +751,106 @@ const Checkout = () => {
                   size="large"
                   onClick={handleNextStep}
                 >
-                  Continue
+                  {t('checkout.continue')}
                 </Button>
               ) : (
-                <Button
-                  variant="primary"
-                  size="large"
-                  onClick={handlePlaceOrder}
-                >
-                  Place Order
-                </Button>
+                <>
+                  <Button
+                    variant="primary"
+                    size="large"
+                    onClick={handlePlaceOrder}
+                    disabled={isSubmittingPayment}
+                  >
+                    {isSubmittingPayment ? t('checkout.processing') : t('checkout.placeOrder')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="large"
+                    onClick={handleWhatsAppFallback}
+                  >
+                    {t('checkout.whatsappFallback')}
+                  </Button>
+                </>
               )}
             </div>
           </div>
 
           {/* Right Column - Order Summary */}
-          <div className="checkout-sidebar">
+          <div className={`checkout-sidebar ${isSummaryExpanded ? 'is-expanded' : ''}`}>
             <div className="order-summary">
-              <h3>Order Summary</h3>
-              
-              <div className="summary-items">
-                {cart && cart.map((item) => (
-                  <div key={item.cartItemId} className="summary-item">
-                    <span className="item-name">
-                      {item.product.name} × {item.quantity}
-                    </span>
-                    <span className="item-price">
-                      {formatPrice(item.product.price * item.quantity)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="summary-divider"></div>
-
-              <div className="summary-row">
-                <span>Subtotal</span>
-                <span>{formatPrice(subtotal)}</span>
-              </div>
-
-              <div className="summary-row">
-                <span>Tax (PPN 11%)</span>
-                <span>{formatPrice(tax)}</span>
-              </div>
-
-              <div className="summary-row">
-                <span>Shipping</span>
-                <span>{shippingCost === 0 ? 'FREE' : formatPrice(shippingCost)}</span>
-              </div>
-
-              {subtotal >= 1000000 && (
-                <div className="free-shipping-note">
-                  🎉 You got free shipping!
+              <button
+                type="button"
+                className="order-summary-toggle"
+                onClick={() => setIsSummaryExpanded(prev => !prev)}
+                aria-expanded={isSummaryExpanded}
+                aria-label={isSummaryExpanded ? t('checkout.hideSummary') : t('checkout.showSummary')}
+              >
+                <div className="order-summary-toggle-copy">
+                  <h3>{t('checkout.orderSummary')}</h3>
+                  <span className="order-summary-count">{summaryItemCount}</span>
                 </div>
-              )}
+                <div className="order-summary-toggle-meta">
+                  <span>{formatPrice(total)}</span>
+                  <span className="order-summary-toggle-icon">{isSummaryExpanded ? '−' : '+'}</span>
+                </div>
+              </button>
 
-              <div className="summary-divider"></div>
+              <div className="order-summary-content">
+                <div className="summary-items">
+                  {cart && cart.map((item) => (
+                    <div key={item.cartItemId} className="summary-item">
+                      <span className="item-name">
+                        {item.name} × {item.quantity}
+                      </span>
+                      <span className="item-price">
+                        {formatPrice(item.price * item.quantity)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
 
-              <div className="summary-total">
-                <span>Total</span>
-                <span>{formatPrice(total)}</span>
+                <div className="summary-divider"></div>
+
+                <div className="summary-row">
+                  <span>{t('cart.subtotal')}</span>
+                  <span>{formatPrice(subtotal)}</span>
+                </div>
+
+                <div className="summary-row">
+                  <span>{t('cart.tax')}</span>
+                  <span>{formatPrice(tax)}</span>
+                </div>
+
+                {discountAmount > 0 && (
+                  <div className="summary-row">
+                    <span>{t('checkout.voucherDiscount')}</span>
+                    <span>-{formatPrice(discountAmount)}</span>
+                  </div>
+                )}
+
+                <div className="summary-row">
+                  <span>{t('cart.shipping')}</span>
+                  <span>{shippingCost === 0 ? t('cart.freeShipping') : formatPrice(shippingCost)}</span>
+                </div>
+
+                {(isShippingQuoteLoading || shippingQuoteMessage) && (
+                  <p className="shipping-quote-note">
+                    {isShippingQuoteLoading ? t('common.loading') : shippingQuoteMessage}
+                  </p>
+                )}
+
+                {subtotal >= 1000000 && (
+                  <div className="free-shipping-note">
+                    {t('cart.freeShippingNotice')}
+                  </div>
+                )}
+
+                <div className="summary-divider"></div>
+
+                <div className="summary-total">
+                  <span>{t('cart.total')}</span>
+                  <span>{formatPrice(total)}</span>
+                </div>
               </div>
             </div>
           </div>
