@@ -5,6 +5,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { OrderProvider } from './context/OrderContext';
+import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { RecentlyViewedProvider } from './context/RecentlyViewedContext';
 import { HelmetProvider } from 'react-helmet-async';
@@ -49,20 +50,22 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           v7_relativeSplatPath: true
         }}
       >
-        <LanguageProvider>
-          <ToastProvider>
-            <RecentlyViewedProvider>
-              <CartProvider>
-                <WishlistProvider>
-                  <OrderProvider>
-                    <ToastContainer />
-                    <App />
-                  </OrderProvider>
-                </WishlistProvider>
-              </CartProvider>
-            </RecentlyViewedProvider>
-          </ToastProvider>
-        </LanguageProvider>
+        <AuthProvider>
+          <LanguageProvider>
+            <ToastProvider>
+              <RecentlyViewedProvider>
+                <CartProvider>
+                  <WishlistProvider>
+                    <OrderProvider>
+                      <ToastContainer />
+                      <App />
+                    </OrderProvider>
+                  </WishlistProvider>
+                </CartProvider>
+              </RecentlyViewedProvider>
+            </ToastProvider>
+          </LanguageProvider>
+        </AuthProvider>
       </BrowserRouter>
     </HelmetProvider>
   </React.StrictMode>

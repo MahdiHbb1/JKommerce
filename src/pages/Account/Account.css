@@ -1,0 +1,109 @@
+.account-page {
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+.account-container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 40px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.account-container h1 {
+  margin-bottom: 30px;
+  color: #D2691E;
+  text-align: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #333;
+}
+
+.form-group input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #D2691E;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 14px;
+  margin: -10px 0 10px 0;
+}
+
+.auth-switch {
+  text-align: center;
+  margin-top: 20px;
+  color: #666;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: #D2691E;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.link-button:hover {
+  color: #8B4513;
+}
+
+.auth-not-configured {
+  color: #666;
+  text-align: center;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.account-details {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.account-info {
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.account-info h2 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.account-info p {
+  margin: 10px 0;
+  color: #666;
+}
+
+.account-actions {
+  display: flex;
+  justify-content: center;
+}

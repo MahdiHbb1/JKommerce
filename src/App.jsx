@@ -12,6 +12,7 @@ const About = lazy(() => import('./pages/About/About'));
 const Wishlist = lazy(() => import('./pages/Wishlist/Wishlist'));
 const OrderHistory = lazy(() => import('./pages/OrderHistory/OrderHistory'));
 const OrderLookup = lazy(() => import('./pages/OrderLookup/OrderLookup'));
+const Account = lazy(() => import('./pages/Account/Account'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/orders" element={<OrderHistory />} />
           <Route path="/order-lookup" element={<OrderLookup />} />
+          <Route path="/account" element={<Account />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

@@ -303,7 +303,23 @@ export const translations = {
       processing: 'Sedang Diproses',
       shipped: 'Dalam Pengiriman',
       delivered: 'Telah Diterima',
-      cancelled: 'Dibatalkan'
+      cancelled: 'Dibatalkan',
+      guestLookupTitle: 'Lacak Pesanan Tamu',
+      guestLookupDescription: 'Masukkan nomor pesanan dan email yang dipakai saat checkout.',
+      guestLookupCta: 'Lacak pesanan tamu',
+      lookupOrderNumber: 'Nomor Pesanan',
+      lookupEmail: 'Email',
+      lookupSubmit: 'Cek Pesanan',
+      lookupReset: 'Reset',
+      lookupNoResults: 'Pesanan tidak ditemukan.',
+      lookupEmailMismatch: 'Email tidak cocok dengan pesanan ini.',
+      lookupResults: 'Hasil Pencarian',
+      lookupOrderDate: 'Tanggal Pesanan',
+      lookupStatus: 'Status',
+      lookupTotal: 'Total',
+      lookupItems: 'Item Pesanan',
+      lookupShippingAddress: 'Alamat Pengiriman',
+      lookupPaymentMethod: 'Metode Pembayaran'
     },
 
     // About
@@ -547,7 +563,17 @@ export const translations = {
       itemsInCart: 'items in cart',
       startShopping: 'Start Shopping',
       freeShipping: 'Free Shipping',
-      freeShippingMessage: 'Free shipping on orders over IDR 100,000'
+      freeShippingMessage: 'Free shipping on orders over IDR 100,000',
+      orderSummary: 'Order Summary',
+      removeConfirm: 'Remove "{name}" from cart?',
+      clearConfirm: 'Are you sure you want to clear the entire shopping cart?',
+      itemRemoved: '"{name}" has been removed from cart',
+      cartCleared: 'Cart has been cleared',
+      decreaseQuantity: 'Decrease quantity',
+      increaseQuantity: 'Increase quantity',
+      removeItem: 'Remove item',
+      freeShippingNotice: '🚚 Free shipping on all orders',
+      shippingTime: '📦 Shipped within 2-3 business days'
     },
 
     // Filter
@@ -762,7 +788,23 @@ export const translations = {
       processing: 'Processing',
       shipped: 'Shipped',
       delivered: 'Delivered',
-      cancelled: 'Cancelled'
+      cancelled: 'Cancelled',
+      guestLookupTitle: 'Guest Order Lookup',
+      guestLookupDescription: 'Enter the order number and the email used during checkout.',
+      guestLookupCta: 'Track guest order',
+      lookupOrderNumber: 'Order Number',
+      lookupEmail: 'Email',
+      lookupSubmit: 'Check Order',
+      lookupReset: 'Reset',
+      lookupNoResults: 'No order was found.',
+      lookupEmailMismatch: 'The email does not match this order.',
+      lookupResults: 'Search Results',
+      lookupOrderDate: 'Order Date',
+      lookupStatus: 'Status',
+      lookupTotal: 'Total',
+      lookupItems: 'Order Items',
+      lookupShippingAddress: 'Shipping Address',
+      lookupPaymentMethod: 'Payment Method'
     },
 
     // About

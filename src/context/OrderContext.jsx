@@ -1,5 +1,6 @@
-import { createContext, useState, useContext, useEffect, useRef } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
 import { supabase, isSupabaseConfigured, SUPABASE_ORDERS_TABLE } from '../lib/supabaseClient';
+import { useAuth } from './AuthContext';
 
 const OrderContext = createContext();
 
@@ -56,10 +57,11 @@ const mergeOrders = (primaryOrders, secondaryOrders) => {
   });
 };
 
-const toSupabaseRow = (orderData) => ({
+const toSupabaseRow = (orderData, userId = null) => ({
   order_number: orderData.orderNumber,
   email: orderData.shippingInfo?.email || '',
   status: orderData.status || 'processing',
+  user_id: userId,
   payload: {
     ...orderData,
     id: orderData.id || orderData.orderNumber,
@@ -77,6 +79,7 @@ export const useOrders = () => {
 };
 
 export const OrderProvider = ({ children }) => {
+  const { user } = useAuth();
   const [orders, setOrders] = useState(() => {
     const savedOrders = safeParseOrders(localStorage.getItem(LOCAL_STORAGE_KEY));
     if (Array.isArray(savedOrders)) {
@@ -85,51 +88,10 @@ export const OrderProvider = ({ children }) => {
     return [];
   });
 
-  const hasHydratedRemoteOrders = useRef(false);
-
   // Save orders to localStorage whenever they change.
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(orders));
   }, [orders]);
-
-  // Hydrate orders from Supabase when configured, but keep localStorage as the fallback source.
-  useEffect(() => {
-    let isActive = true;
-
-    const hydrateRemoteOrders = async () => {
-      if (!isSupabaseConfigured || !supabase || hasHydratedRemoteOrders.current) {
-        return;
-      }
-
-      hasHydratedRemoteOrders.current = true;
-
-      try {
-        const { data, error } = await supabase
-          .from(SUPABASE_ORDERS_TABLE)
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-
-        if (!isActive || !Array.isArray(data)) {
-          return;
-        }
-
-        const remoteOrders = data.map(normalizeOrder);
-        setOrders((currentOrders) => mergeOrders(remoteOrders, currentOrders));
-      } catch (error) {
-        console.error('Error loading orders from Supabase:', error);
-      }
-    };
-
-    hydrateRemoteOrders();
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
 
   // Add new order
   const addOrder = async (orderData) => {
@@ -149,7 +111,7 @@ export const OrderProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from(SUPABASE_ORDERS_TABLE)
-        .upsert(toSupabaseRow(newOrder), { onConflict: 'order_number' })
+        .upsert(toSupabaseRow(newOrder, user?.id), { onConflict: 'order_number' })
         .select('*')
         .single();
 

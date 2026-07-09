@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useOrders } from '../../context/OrderContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import Button from '../../components/Button/Button';
 import { formatPrice } from '../../data/products';
@@ -8,12 +7,12 @@ import PageMeta from '../../components/Seo/PageMeta';
 import './OrderLookup.css';
 
 const OrderLookup = () => {
-  const { getOrderById } = useOrders();
   const { t, formatCurrency } = useTranslation();
   const [orderNumber, setOrderNumber] = useState('');
   const [email, setEmail] = useState('');
   const [lookupResult, setLookupResult] = useState(null);
   const [lookupMessage, setLookupMessage] = useState('');
+  const [isLookingUp, setIsLookingUp] = useState(false);
 
   const normalizeEmail = (value) => value.trim().toLowerCase();
 
@@ -31,7 +30,7 @@ const OrderLookup = () => {
     return labels[lookupResult.status] || lookupResult.status;
   }, [lookupResult, t]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const trimmedOrderNumber = orderNumber.trim();
@@ -43,24 +42,69 @@ const OrderLookup = () => {
       return;
     }
 
-    const foundOrder = getOrderById(trimmedOrderNumber);
-
-    if (!foundOrder) {
-      setLookupResult(null);
-      setLookupMessage(t('orders.lookupNoResults'));
-      return;
-    }
-
-    const orderEmail = normalizeEmail(foundOrder.shippingInfo?.email || '');
-
-    if (orderEmail !== trimmedEmail) {
-      setLookupResult(null);
-      setLookupMessage(t('orders.lookupEmailMismatch'));
-      return;
-    }
-
-    setLookupResult(foundOrder);
+    setIsLookingUp(true);
     setLookupMessage('');
+    setLookupResult(null);
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        setLookupMessage('Supabase not configured');
+        setIsLookingUp(false);
+        return;
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/lookup-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({
+          orderNumber: trimmedOrderNumber,
+          email: trimmedEmail
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.error === 'Order not found') {
+          setLookupMessage(t('orders.lookupNoResults'));
+        } else if (data.error === 'Email mismatch') {
+          setLookupMessage(t('orders.lookupEmailMismatch'));
+        } else {
+          setLookupMessage(data.error || 'Lookup failed');
+        }
+        setIsLookingUp(false);
+        return;
+      }
+
+      if (data.order) {
+        // Normalize the order data from Supabase to match the expected format
+        const payload = data.order.payload && typeof data.order.payload === 'object'
+          ? data.order.payload
+          : data.order;
+
+        const normalizedOrder = {
+          ...payload,
+          id: payload.id || data.order.id || payload.orderNumber,
+          orderNumber: payload.orderNumber || data.order.order_number,
+          orderDate: payload.orderDate || data.order.created_at,
+          status: payload.status || data.order.status
+        };
+
+        setLookupResult(normalizedOrder);
+        setLookupMessage('');
+      }
+    } catch (error) {
+      console.error('Order lookup error:', error);
+      setLookupMessage('Network error. Please try again.');
+    } finally {
+      setIsLookingUp(false);
+    }
   };
 
   const handleReset = () => {
@@ -114,10 +158,10 @@ const OrderLookup = () => {
           </div>
 
           <div className="lookup-actions">
-            <Button variant="primary" size="large" type="submit">
-              {t('orders.lookupSubmit')}
+            <Button variant="primary" size="large" type="submit" disabled={isLookingUp}>
+              {isLookingUp ? 'Looking up...' : t('orders.lookupSubmit')}
             </Button>
-            <Button variant="outline" size="large" type="button" onClick={handleReset}>
+            <Button variant="outline" size="large" type="button" onClick={handleReset} disabled={isLookingUp}>
               {t('orders.lookupReset')}
             </Button>
           </div>

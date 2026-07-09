@@ -73,6 +73,35 @@ A modern, full-featured e-commerce platform for authentic Indonesian batik produ
    http://localhost:5173
    ```
 
+## 🔐 Environment Setup
+
+For full functionality including order persistence and payment processing, you need to configure environment variables:
+
+1. **Copy the example environment file**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Configure Supabase** (Required for order persistence)
+   - Create a Supabase project at [supabase.com](https://supabase.com)
+   - Run the migration files in `supabase/migrations/` to set up the orders table
+   - Add your Supabase URL and anon key to `.env`
+   - For Edge Functions, also add the service role key
+   - Deploy the Edge Function in `supabase/functions/lookup-order/` for secure order lookup
+
+3. **Configure Midtrans** (Required for payment processing)
+   - Create a Midtrans sandbox account at [midtrans.com](https://midtrans.com)
+   - Get your client key from the Midtrans dashboard
+   - Set up a server-side token endpoint (or use a test endpoint)
+   - Add Midtrans configuration to `.env`
+
+4. **Optional configurations**
+   - Shipping quote endpoint for real-time shipping costs
+   - WhatsApp number for WhatsApp fallback checkout
+   - Plausible analytics for website analytics
+
+**Note**: The application will work in development mode without these configurations, but checkout and order persistence features will be limited.
+
 ## 🏗️ Project Structure
 
 ```

@@ -34,29 +34,41 @@ const ProductDetail = () => {
     rating: 5,
     comment: ''
   });
-  const [reviews, setReviews] = useState([
-    {
-      id: 1,
-      name: 'Sarah Wijaya',
-      rating: 5,
-      comment: 'Absolutely beautiful batik! The craftsmanship is exceptional and the colors are vibrant. Worth every rupiah.',
-      date: '2025-12-15'
-    },
-    {
-      id: 2,
-      name: 'Ahmad Kusuma',
-      rating: 5,
-      comment: 'Bought this as a gift and my mother loved it. The traditional patterns are authentic and the quality is outstanding.',
-      date: '2025-12-10'
-    },
-    {
-      id: 3,
-      name: 'Rina Pratiwi',
-      rating: 4,
-      comment: 'Beautiful piece! Shipping was fast and packaging was excellent. Minor color variation from photo but still gorgeous.',
-      date: '2025-12-05'
+  const [reviews, setReviews] = useState(() => {
+    // Load reviews from localStorage for this specific product
+    const savedReviews = localStorage.getItem(`jk-reviews-${id}`);
+    if (savedReviews) {
+      try {
+        return JSON.parse(savedReviews);
+      } catch (error) {
+        console.error('Error loading reviews:', error);
+      }
     }
-  ]);
+    // Default sample reviews if none saved
+    return [
+      {
+        id: 1,
+        name: 'Sarah Wijaya',
+        rating: 5,
+        comment: 'Absolutely beautiful batik! The craftsmanship is exceptional and the colors are vibrant. Worth every rupiah.',
+        date: '2025-12-15'
+      },
+      {
+        id: 2,
+        name: 'Ahmad Kusuma',
+        rating: 5,
+        comment: 'Bought this as a gift and my mother loved it. The traditional patterns are authentic and the quality is outstanding.',
+        date: '2025-12-10'
+      },
+      {
+        id: 3,
+        name: 'Rina Pratiwi',
+        rating: 4,
+        comment: 'Beautiful piece! Shipping was fast and packaging was excellent. Minor color variation from photo but still gorgeous.',
+        date: '2025-12-05'
+      }
+    ];
+  });
 
   useEffect(() => {
     setIsLoading(true);
@@ -66,20 +78,27 @@ const ProductDetail = () => {
       setSelectedSize(foundProduct.sizes?.[0] || '');
       setSelectedColor(foundProduct.colors?.[0] || '');
       setRelatedProducts(getRelatedProducts(foundProduct.id));
-      
+
       // Track recently viewed
       addToRecentlyViewed(foundProduct);
-      
+
       // Get recently viewed excluding current product
       const recentItems = getRecentlyViewed(5).filter(item => item.id !== foundProduct.id);
       setRecentlyViewed(recentItems);
-      
+
       window.scrollTo(0, 0);
       setTimeout(() => setIsLoading(false), 500);
     } else {
       navigate('/shop');
     }
   }, [id, navigate]);
+
+  // Save reviews to localStorage whenever they change
+  useEffect(() => {
+    if (id) {
+      localStorage.setItem(`jk-reviews-${id}`, JSON.stringify(reviews));
+    }
+  }, [reviews, id]);
 
   if (isLoading) {
     return (
