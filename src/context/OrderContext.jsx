@@ -109,19 +109,30 @@ export const OrderProvider = ({ children }) => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from(SUPABASE_ORDERS_TABLE)
-        .upsert(toSupabaseRow(newOrder, user?.id), { onConflict: 'order_number' })
-        .select('*')
-        .single();
+      // For guest orders (user_id is null), skip read-back to avoid RLS policy failure.
+      // The SELECT policy requires auth.uid() = user_id, but NULL = NULL is not true in SQL.
+      // Local state already has the correct order data. Guest orders can be retrieved via
+      // the secure Edge Function lookup-order when needed.
+      if (!user) {
+        await supabase
+          .from(SUPABASE_ORDERS_TABLE)
+          .upsert(toSupabaseRow(newOrder, null), { onConflict: 'order_number' });
+      } else {
+        // For authenticated users, read-back is safe and useful for consistency
+        const { data, error } = await supabase
+          .from(SUPABASE_ORDERS_TABLE)
+          .upsert(toSupabaseRow(newOrder, user.id), { onConflict: 'order_number' })
+          .select('*')
+          .single();
 
-      if (error) {
-        throw error;
-      }
+        if (error) {
+          throw error;
+        }
 
-      if (data) {
-        const remoteOrder = normalizeOrder(data);
-        setOrders((prevOrders) => mergeOrders([remoteOrder], prevOrders));
+        if (data) {
+          const remoteOrder = normalizeOrder(data);
+          setOrders((prevOrders) => mergeOrders([remoteOrder], prevOrders));
+        }
       }
     } catch (error) {
       console.error('Error saving order to Supabase:', error);

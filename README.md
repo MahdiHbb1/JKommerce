@@ -86,7 +86,10 @@ For full functionality including order persistence and payment processing, you n
    - Create a Supabase project at [supabase.com](https://supabase.com)
    - Run the migration files in `supabase/migrations/` to set up the orders table
    - Add your Supabase URL and anon key to `.env`
-   - For Edge Functions, also add the service role key
+   - **IMPORTANT**: Service role key for Edge Functions must NOT be added to `.env` or Vercel environment variables. Set it via Supabase CLI:
+     ```bash
+     supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+     ```
    - Deploy the Edge Function in `supabase/functions/lookup-order/` for secure order lookup
 
 3. **Configure Midtrans** (Required for payment processing)

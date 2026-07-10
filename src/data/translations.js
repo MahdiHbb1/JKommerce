@@ -933,7 +933,8 @@ export const translations = {
     // Validation
     validation: {
       required: 'This field is required',
-      invalidEmail: 'Invalid email',
+      emailRequired: 'Please enter your email address',
+      emailInvalid: 'Please enter a valid email address',
       invalidPhone: 'Invalid phone number',
       minLength: 'Minimum {min} characters',
       maxLength: 'Maximum {max} characters',
