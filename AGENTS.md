@@ -14,6 +14,7 @@ Toko batik premium "Janoer Koening": React 18 + Vite + Tailwind 3 + Supabase. Op
 - Tidak pernah commit secret; `.env` gitignored; semua perubahan skema lewat `supabase/migrations/` (tidak pernah edit dashboard).
 - Commit kecil per task (Conventional Commits). Jangan push tanpa instruksi.
 - Eksekusi mengikuti alur **subagent-driven**: satu task = implementasi + review independen sebelum lanjut.
+- Arsitektur v1 = **serverless**: Cloudflare Pages (SPA) + Supabase (Postgres/Auth/Storage/Edge Functions). Tidak ada VPS, nginx, PM2, atau OS server yang dikelola; jangan menambah komponen arsitektur baru tanpa persetujuan pemilik.
 
 <!-- antislop:start -->
 ## antislop (mode DURING)

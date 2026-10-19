@@ -240,11 +240,39 @@ Satu route `/admin` (login + MFA; UI berbahasa Indonesia; boleh tidak bilingual;
 
 **Kerjakan per prioritas checklist (bagian 4), bukan 1-70 sekali jalan:**
 
-- **Stage 5 🔴🟠 (wajib sebelum launch / minggu pertama):** #1–3 rotasi & scanning secret (termasuk **scan riwayat git** `gitleaks`/`trufflehog` sebelum repo jadi publik — saat ini repo GitHub sudah ada, cek apakah pernah ada key ter-commit), #5–6 otorisasi per objek + IDOR (tes otomatis: akun A vs B vs admin vs anon), #7–8 RLS & Supabase storage audit, #13–14 secret tidak di bundle (`VITE_*` hanya anon key & URL), #15–18 validasi schema di semua Edge Function (zod di Deno) + parameterized (PostgREST otomatis parameterized), #19 CSP ketat + eskap default React + sanitasi markdown blog + escape JSON-LD, #20 CSRF N/A-nya: auth via header JWT (bukan cookie sesi custom) — dicatat, #24–26 Supabase Auth (kebijakan password, email konfirmasi, reset aman bawaan; rate limit reset), #28 rate limit di `create-order`, `lookup-order`, upload bukti, newsletter (limiter berbasis Postgres, per IP+per email), #31–32 webhook signature + status hanya dari server, #37/38 dependabot + lockfile + verifikasi tiap paket baru (bahaya paket karangan AI), #41 hak minimal (service role hanya di Edge Function; anon key + RLS untuk client), #44 backup: **`pg_dump` terjadwal (GitHub Action) ke storage privat + uji restore terdokumentasi** (backup Supabase free diverifikasi retensinya saat setup), #46–47 header & cookie, #49 N/A (bukan multi-tenant), #50 review setiap diff (manusia/agent lain) + jalur uang & auth wajib ada test, #55 MFA admin, #9/45 admin tidak terpublikasi.
+- **Stage 5 🔴🟠 (wajib sebelum launch / minggu pertama):** #1–3 rotasi & scanning secret (termasuk **scan riwayat git** `gitleaks`/`trufflehog` sebelum repo jadi publik — saat ini repo GitHub sudah ada, cek apakah pernah ada key ter-commit), #5–6 otorisasi per objek + IDOR (tes otomatis: akun A vs B vs admin vs anon), #7–8 RLS & Supabase storage audit, #13–14 secret tidak di bundle (`VITE_*` hanya anon key & URL), #15–18 validasi schema di semua Edge Function (validator tulis tangan portabel, diuji Vitest; tanpa zod) + parameterized (PostgREST otomatis parameterized), #19 CSP ketat + eskap default React + sanitasi markdown blog + escape JSON-LD, #20 CSRF N/A-nya: auth via header JWT (bukan cookie sesi custom) — dicatat, #24–26 Supabase Auth (kebijakan password, email konfirmasi, reset aman bawaan; rate limit reset), #28 rate limit di `create-order`, `lookup-order`, upload bukti, newsletter (limiter berbasis Postgres, per IP+per email), #31–32 webhook signature + status hanya dari server, #37/38 dependabot + lockfile + verifikasi tiap paket baru (bahaya paket karangan AI), #41 hak minimal (service role hanya di Edge Function; anon key + RLS untuk client), #44 backup: **`pg_dump` terjadwal (GitHub Action) ke storage privat + uji restore terdokumentasi** (backup Supabase free diverifikasi retensinya saat setup), #46–47 header & cookie, #49 N/A (bukan multi-tenant), #50 review setiap diff (manusia/agent lain) + jalur uang & auth wajib ada test, #55 MFA admin, #9/45 admin tidak terpublikasi.
 - **Stage 7 🟡 (bulan pertama):** #21–23 upload bukti (dibatasi tipe/ukuran/nama acak; path privat — path traversal & SSRF N/A karena tidak ada fetch URL dari user), #39–40, #66–67 N/A (tidak ada fitur AI), #42–43 audit log & monitoring (Sentry free + uptime monitor + alert email), #51–54 allowlist field di setiap endpoint (DTO), #57–59 (sudah di desain state machine), #63–65 fail-closed, timeout semua panggilan keluar, DTO output (pangkas lookup-order), #68 risiko diterima (B8) dengan mitigasi CSP + tidak ada PII tambahan di storage browser, #69 hanya redirect internal (validasi `next` relatif), #70 tidak ada GraphQL.
 - **CI/CD (#60–62):** GitHub Actions — lint + build + `npm audit` + gitleaks; action di-pin ke SHA; branch protection di `main`; deploy produksi hanya dari `main`.
 
 **Accepted risks yang didokumentasikan (bukan diabaikan):** (a) sesi di localStorage (B8) dengan mitigasi CSP ketat + eskap + tanpa skrip pihak ketiga; ditinjau ulang saat SSR. (b) Supabase free tier tanpa PITR → ditambal pg_dump mingguan + drill restore.
+
+### 5.11 Catatan tambahan pemilik (19 Okt 2026) — penerapan
+
+| Catatan pemilik | Keputusan | Diterapkan di |
+|---|---|---|
+| Messaging & queueing | Tanpa broker eksternal (Kafka/RabbitMQ) — berlebihan untuk 1 operator & free tier. Antrian ringan berbasis Postgres (`jobs`/outbox) + worker cron, idempoten, untuk email/webhook/notifikasi. | Stage 2–3 |
+| Idempoten | Sudah menjadi kontrak: `idempotency_keys` (create-order), `webhook_events` anti-replay, job & webhook diproses sekali. | Plan 1 (T4/T11), Stage 2–3 |
+| Security kit | Tercakup checklist §5.10: RLS, CSP, rate limit, validasi input, manajemen secret, scan dependensi, audit log. | Stage 5 |
+| Loosely coupled | Modul terpisah: validator & pricing murni, adapter pembayaran per provider, Edge Function per use-case, RPC DB sebagai kontrak. | Plan 1–2 |
+| Setup server / nginx / PM2 / OS server | **Tidak dipakai di v1** — serverless: Cloudflare Pages + Supabase. Tidak ada server publik sendiri yang perlu difirewall, di-hardening, atau di-update OS-nya. | — |
+| Beli server? / server gratis? | **Tidak perlu beli.** Cloudflare Pages + Supabase free tier cukup untuk peluncuran. VPS gratis (mis. Oracle) sengaja tidak dipakai: menambah beban ops & permukaan serang. | — |
+| Domain gratis | Subdomain `*.pages.dev` gratis; domain kustom tetap disarankan dibeli (~Rp150–250k/tahun) untuk toko nyata. | Stage 0 (T5) |
+| DNS Cloudflare | Sudah. | T5 |
+| Firewall | Tidak ada server → proteksi di platform (Cloudflare WAF/DDoS, Supabase) + rate limit aplikasi. `ufw`/`fail2ban` hanya relevan bila kelak pindah VPS. | Stage 5 |
+| Sanitasi, XSS, SQL injection | Validasi tulis tangan di edge, query parameterized (PostgREST/RPC, tanpa string SQL dari klien), eskap default React, CSP, sanitasi markdown blog. | Plan 1, Stage 5–6 |
+| OS server | N/A (serverless). Bila kelak VPS: Ubuntu 24.04 LTS. | — |
+| Payment gateway | **Duitku** (diputuskan; mendukung QRIS & VA) + transfer/QRIS manual sebagai fallback selalu-aktif. | Plan 2 |
+| Metode QRIS | Otomatis via Duitku QRIS; manual: QRIS statis milik pemilik + unggah bukti (bukti diverifikasi admin). Butuh akun QRIS merchant dari pemilik. | Plan 2, Stage 3 |
+| Konten placeholder baru | Konten sementara diberi status draft/placeholder dan dilarang tampil di produksi sampai diganti data nyata; seed produk ber-`needs_verification`. | Stage 4, 6 |
+| Redesign landing page & kartu profil/akun | Masuk overhaul Stage 4.5 (landing/hero, halaman akun/profil ringkas: data, alamat, pesanan). | Stage 4.5 |
+| Autentikasi & otorisasi | Supabase Auth + RLS (select milik sendiri) + `is_admin()` + MFA admin; tidak ada penulisan status dari klien. | Plan 1, Stage 3 |
+| DDoS | Cloudflare DDoS protection + batas body/rate limit aplikasi (Postgres) + timeout keluar. Tidak ada origin server sendiri yang bisa dibanjiri langsung. | Stage 5 |
+| Integritas data | Constraint & FK, transaksi RPC, reservasi stok atomik, idempotensi, `order_events`, backup `pg_dump` + drill restore. | Plan 1, Stage 5 |
+| Enkripsi | TLS/HSTS di semua koneksi; data at-rest dienkripsi Supabase; data kartu tidak pernah menyentuh server (redirect gateway); secret hanya di env/secrets. | Stage 5, 7 |
+| SSL verification | Cloudflare Universal SSL + HSTS; bukti SSL Labs + masa berlaku dicek saat go-live QA. | Stage 7 |
+| Load balancing | Dikelola platform (Cloudflare CDN + Supabase); tidak ada LB manual. | — |
+| CRM | Tidak perlu alat CRM untuk v1; panel admin memberi view pelanggan ringan (riwayat pesanan, kontak, catatan). Evaluasi pasca-launch. | Stage 3 |
+| Schema "saved IG / saved Threads" | **Perlu klarifikasi pemilik.** Default: tautan Instagram/Threads disimpan di `site_settings.social` dan tampil di footer; "simpan produk" = wishlist yang sudah ada; embed feed IG/Threads ditunda (butuh Meta API/oEmbed). | Stage 4/6 |
 
 ---
 
@@ -301,11 +329,11 @@ Satu stage = satu sesi kerja yang bisa direview pemilik sebelum lanjut. Urutanny
 - **Selesai bila:** pesanan uji buatan pembeli masuk ke DB, terlihat pemilik, stok turun otomatis, dan mencoba memalsukan harga/status dari DevTools gagal (bukti tangkapan layar).
 
 **Stage 2 — Pembayaran (manual + Duitku)**
-- Halaman instruksi manual + upload bukti (Storage privat) + verifikasi admin **sementara** (masih boleh lewat dashboard Supabase di stage ini); adapter Duitku + sandbox + callback terverifikasi + anti-replay; halaman success/failed versi baru (polling, tanpa percaya redirect); expiry job; email transaksional dasar.
+- Halaman instruksi manual + upload bukti (Storage privat) + verifikasi admin **sementara** (masih boleh lewat dashboard Supabase di stage ini); adapter Duitku + sandbox + callback terverifikasi + anti-replay; halaman success/failed versi baru (polling, tanpa percaya redirect); expiry job; email transaksional dasar. Notifikasi/email dan pekerjaan async lain lewat **antrian ringan `jobs`/outbox berbasis Postgres** (idempoten, diproses cron) — tanpa broker eksternal.
 - **Selesai bila:** dua skenario penuh lolos di sandbox: (a) bayar manual → upload bukti → (admin tandai valid) → status `paid`; (b) bayar Duitku sandbox → callback → status `paid` otomatis; keduanya meninggalkan jejak di `order_events` dan melepas/mengonversi stok dengan benar.
 
 **Stage 3 — Panel admin & notifikasi lengkap**
-- `/admin` lengkap (§5.5): auth + MFA, pesanan (verifikasi bukti, resi, status), produk & stok, konten, pengaturan, subscriber, ringkasan; email Resend (pembeli + pemilik); lonceng notifikasi.
+- `/admin` lengkap (§5.5): auth + MFA, pesanan (verifikasi bukti, resi, status), produk & stok, konten, pengaturan, subscriber, ringkasan; email Resend (pembeli + pemilik); lonceng notifikasi. Pengiriman email & notifikasi memakai antrian `jobs` yang sama (retry + idempoten).
 - **Selesai bila:** pemilik menyelesaikan satu pesanan penuh dari panel admin tanpa membuka dashboard Supabase, tanpa membaca SQL.
 
 **Stage 4 — Legal, trust & konten jujur**
@@ -319,7 +347,7 @@ Satu stage = satu sesi kerja yang bisa direview pemilik sebelum lanjut. Urutanny
 - Catatan: perbaikan murah yang global (scroll antar-route, focus-visible, reduced-motion guard) dikerjakan lebih awal di **Plan 1 Task 14** supaya tidak menunggu sampai sini.
 
 **Stage 5 — Hardening keamanan (checklist 🔴🟠)**
-- Rate limiting, scan riwayat git + secret, tes otorisasi (IDOR/authz) otomatis, CORS dikunci, CSP diverifikasi di produksi, error generik, timeout panggilan keluar, Sentry + uptime monitor, backup pg_dump + drill restore, dependabot + pin actions, audit log dicek.
+- Rate limiting, scan riwayat git + secret, tes otorisasi (IDOR/authz) otomatis, CORS dikunci, CSP diverifikasi di produksi, error generik, timeout panggilan keluar, Sentry + uptime monitor, backup pg_dump + drill restore, dependabot + pin actions, audit log dicek. DDoS (Cloudflare), verifikasi SSL (SSL Labs + expiry), enkripsi transport (TLS/HSTS) & at-rest, serta integritas data (constraint/FK + bukti restore) dicek dengan bukti.
 - **Selesai bila:** seluruh item 🔴 & 🟠 checklist bagian 4 tertutup dengan bukti (atau didefer eksplisit beserta alasan tertulis); tes otorisasi hijau.
 
 **Stage 6 — SEO, schema & konten**

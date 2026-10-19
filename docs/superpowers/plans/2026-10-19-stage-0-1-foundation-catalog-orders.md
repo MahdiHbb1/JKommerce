@@ -403,6 +403,7 @@ npx supabase functions deploy create-order lookup-order --project-ref <ref>
 - **Plan 5 (Stage 5):** rate limit menyeluruh, monitoring, backup + restore drill, security sweep 🔴🟠.
 - **Plan 6 (Stage 6):** JSON-LD semua schema, sitemap/robots, prerender, konten blog + FAQ.
 - **Plan 7 (Stage 7):** go-live QA + runbook operasional.
+- **Tambahan 19 Okt 2026 (catatan pemilik):** antrian ringan `jobs`/outbox Postgres di Stage 2–3 (tanpa broker eksternal); CRM dan embed feed IG/Threads ditunda pasca-launch (tautan sosial di `site_settings.social`, fitur "simpan" produk = wishlist); VPS/nginx/PM2/OS server **tidak dipakai** di v1 (serverless Cloudflare Pages + Supabase). Rincian keputusan: dokumen desain §5.11.
 
 ## Catatan Self-Review (untuk pelaksana)
 
