@@ -362,7 +362,22 @@ npx supabase functions deploy create-order lookup-order --project-ref <ref>
 
 ---
 
-### Task 14: E2E manual, dokumen acceptance, PR Stage 0–1
+### Task 14: UX dasar global — scroll, fokus, reduced-motion (murah, menyeluruh)
+
+**Files:**
+- Create: `src/components/ScrollToTop/ScrollToTop.jsx`, `src/components/ScrollToTop/__tests__/ScrollToTop.test.jsx`
+- Modify: `src/App.jsx` (pasang `<ScrollToTop />` di dalam Router), `src/index.css` (scroll-behavior + focus-visible + guard reduced-motion)
+
+**Interfaces:**
+- Produces: perilaku global untuk semua halaman: (a) pindah route → halaman mulai dari atas (instan, bukan smooth, supaya navigasi tidak terasa lambat); (b) klik anchor `#...` yang valid → smooth scroll (dari CSS, hanya saat `prefers-reduced-motion: no-preference`); (c) fokus keyboard selalu terlihat (`:focus-visible` dengan ring token; tidak ada `outline: none` tanpa pengganti); (d) animasi CSS yang ada (slide/fade/scale) meredup untuk pengguna reduced-motion (durasi mendekati 0, bukan dihapus).
+
+- [ ] **Step 1: Test gagal** — render `<ScrollToTop />` di dalam `MemoryRouter`; assert: berpindah pathname memanggil `window.scrollTo` dengan tujuan `top: 0`; berpindah hanya hash tidak memanggil.
+- [ ] **Step 2: Run** `npx vitest run src/components/ScrollToTop` — Expected: FAIL.
+- [ ] **Step 3: Implementasi** — komponen `ScrollToTop` (`useLocation` + `useEffect`, `window.scrollTo({ top: 0, left: 0, behavior: 'instant' })`); di `src/index.css`: `@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }`, gaya `:focus-visible` global (outline 2px + offset 2px, warna dari token), guard `@media (prefers-reduced-motion: reduce)` untuk animation/transition. Audit singkat `outline: none` di seluruh `src/**/*.css` — ganti dengan gaya focus-visible bila ketemu.
+- [ ] **Step 4: Manual check** — Shop → scroll ke bawah → buka produk → halaman mulai di atas; Tab keliling → fokus selalu terlihat; aktifkan "reduce motion" di OS → tidak ada animasi besar.
+- [ ] **Step 5: Commit** (`feat(ux): scroll restoration, focus-visible, reduced-motion guard`)
+
+### Task 15: E2E manual, dokumen acceptance, PR Stage 0–1
 
 **Files:**
 - Create: `docs/runbook/stage-0-1-acceptance.md`
@@ -383,13 +398,14 @@ npx supabase functions deploy create-order lookup-order --project-ref <ref>
 
 - **Plan 2 (Stage 2):** adapter pembayaran Duitku + jalur transfer manual + upload bukti + webhook + halaman status pembayaran + email transaksional + penghapusan sisa Xendit.
 - **Plan 3 (Stage 3):** panel admin lengkap + MFA + notifikasi pemilik.
-- **Plan 4 (Stage 4):** halaman legal, consent records, unsubscribe, ekspor/hapus akun, audit copy, aksesibilitas.
+- **Plan 4 (Stage 4):** halaman legal, consent records, unsubscribe, ekspor/hapus akun, audit copy.
+- **Plan 4.5 (Stage 4.5):** desain, motion & kenyamanan (UI/UX overhaul + `DESIGN.md`, sesuai permintaan pemilik) — dikerjakan setelah halaman fungsional & legal selesai, sebelum prerender SEO.
 - **Plan 5 (Stage 5):** rate limit menyeluruh, monitoring, backup + restore drill, security sweep 🔴🟠.
 - **Plan 6 (Stage 6):** JSON-LD semua schema, sitemap/robots, prerender, konten blog + FAQ.
 - **Plan 7 (Stage 7):** go-live QA + runbook operasional.
 
 ## Catatan Self-Review (untuk pelaksana)
 
-- Cakupan spec Stage 0–1 ↔ task: fondasi/deploy = T1–T5; katalog DB + seed = T6–T7; pesanan server-side = T4, T10–T12; pelacakan/pembatalan = T13; acceptance = T14. Store bucket & settings = T4/T7. Gate ongkir kosong = T10 (tolak) + T12 (blokir UI).
+- Cakupan spec Stage 0–1 ↔ task: fondasi/deploy = T1–T5; katalog DB + seed = T6–T7; pesanan server-side = T4, T10–T12; pelacakan/pembatalan = T13; UX dasar global = T14; acceptance = T15. Store bucket & settings = T4/T7. Gate ongkir kosong = T10 (tolak) + T12 (blokir UI).
 - Nama & tipe konsisten: `stock_available` (klien) = `stock_on_hand - stock_reserved` (DB); `expires_at` 24 jam; `idempotency_key` 8–80 char; status enum persis Global Constraints.
 - Test Review Focus tersebar: uang/pajak → T10; idempotensi → T11; race stok → T4 Step 5(d); IDOR lookup/cancel → T4 Step 5(e) & T11/T13; RLS bocor → T4 Step 5(c).

@@ -59,7 +59,7 @@ Keputusan yang **saya** (perancang) ambil dan pemilik boleh bantah — lihat §9
 4. Legal & trust: Privacy Policy, Syarat & Ketentuan, Kebijakan Retur/Refund, Cookie Policy, FAQ, halaman Kontak/About dengan data bisnis nyata; consent yang benar-benar tersimpan; unsubscribe; hapus/ekspor akun; hapus semua konten palsu.
 5. Keamanan sesuai prioritas checklist (🔴 wajib sebelum launch, 🟠 minggu pertama) + hardening lanjutan di stage akhir.
 6. SEO & markup: JSON-LD per halaman dari data nyata, sitemap, robots, prerender, blog + FAQ bertenaga konten asli.
-7. UI/UX: perbaikan menyeluruh pada alur beli (mobile-first), aksesibilitas WCAG dasar, font yang benar-benar dimuat, empty/error states yang rapi.
+7. UI/UX: perbaikan menyeluruh pada alur beli (mobile-first), navigasi & scroll yang nyaman (scroll restoration, anchor halus), motion bertujuan, aksesibilitas WCAG dasar, font yang benar-benar dimuat, empty/error states yang rapi (detail pengerjaan: Stage 4.5).
 
 **Non-goals (v1 — sengaja ditunda):**
 - Migrasi framework (Next.js/SSR penuh), aplikasi mobile, multi-currency, multi-bahasa selain id/en yang sudah ada.
@@ -308,9 +308,15 @@ Satu stage = satu sesi kerja yang bisa direview pemilik sebelum lanjut. Urutanny
 - `/admin` lengkap (§5.5): auth + MFA, pesanan (verifikasi bukti, resi, status), produk & stok, konten, pengaturan, subscriber, ringkasan; email Resend (pembeli + pemilik); lonceng notifikasi.
 - **Selesai bila:** pemilik menyelesaikan satu pesanan penuh dari panel admin tanpa membuka dashboard Supabase, tanpa membaca SQL.
 
-**Stage 4 — Legal, trust & aksesibilitas**
-- Semua halaman legal + FAQ + Kontak (data nyata); consent clickwrap + `consent_records`; unsubscribe nyata; ekspor & hapus akun; hapus testimoni karangan, newsletter palsu, tautan sosial/nomor placeholder; audit klaim copy; font self-host; pass aksesibilitas (alt, kontras, keyboard, fokus, label); copy id/en rapi.
-- **Selesai bila:** tidak ada satu pun data/klaim palsu di situs (audit ulang berdasar daftar §3); alur consent & unsubscribe terbukti jalan dan tercatat; audit aksesibilitas dasar lolos.
+**Stage 4 — Legal, trust & konten jujur**
+- Semua halaman legal + FAQ + Kontak (data nyata); consent clickwrap + `consent_records`; unsubscribe nyata; ekspor & hapus akun; hapus testimoni karangan, newsletter palsu, tautan sosial/nomor placeholder; audit klaim copy; copy id/en rapi.
+- **Selesai bila:** tidak ada satu pun data/klaim palsu di situs (audit ulang berdasar daftar §3); alur consent & unsubscribe terbukti jalan dan tercatat.
+
+**Stage 4.5 — Desain, motion & kenyamanan (UI/UX overhaul)**
+- **Prasyarat:** `DESIGN.md` (arah visual, palet, tipografi, dial ENERGY/RHYTHM/MOTION) disetujui pemilik — hasil riset `ui-ux-pro-max` + filter `antislop`; dikerjakan memakai sub-skill `antislop-ui`, `antislop-layoutmobile`, `antislop-human`, `antislop-copywriting`, plus `frontend-ui-engineering` / `impeccable` sesuai kebutuhan.
+- **Lingkup:** token desain & tipografi self-host (berbasis DNA cokelat-emas yang sudah ada di `tailwind.config.js`, dirapikan berdasar riset palet luxury e-commerce); navigasi & scroll (scroll restoration saat pindah halaman, animasi anchor, header berkeadaan, penanda halaman aktif, skip-link, halaman 404 bermerek); motion bertujuan (hover/press feedback, stagger halus, reveal seperlunya — **semua hormat `prefers-reduced-motion`, tanpa template animation** sesuai antislop R-19); states lengkap (skeleton/empty/error di setiap UI data); kenyamanan mobile (tap target ≥44px, safe area); performa visual (gambar WebP/AVIF, lazy-load, CLS < 0.1); aksesibilitas visual penuh (kontras AA, focus-visible); copywriting Indonesia yang spesifik (bukan template).
+- **Definition of done:** Delivery Gate antislop **PASS dengan bukti** + klik-ulik nyata di browser (Playwright via skill `webapp-testing`) + Lighthouse mobile di atas ambang §11.
+- Catatan: perbaikan murah yang global (scroll antar-route, focus-visible, reduced-motion guard) dikerjakan lebih awal di **Plan 1 Task 14** supaya tidak menunggu sampai sini.
 
 **Stage 5 — Hardening keamanan (checklist 🔴🟠)**
 - Rate limiting, scan riwayat git + secret, tes otorisasi (IDOR/authz) otomatis, CORS dikunci, CSP diverifikasi di produksi, error generik, timeout panggilan keluar, Sentry + uptime monitor, backup pg_dump + drill restore, dependabot + pin actions, audit log dicek.
@@ -386,7 +392,7 @@ Satu stage = satu sesi kerja yang bisa direview pemilik sebelum lanjut. Urutanny
 3. **Legal:** semua item Bagian 1 checklist tertutup dengan bukti file/halaman; consent & unsubscribe & hapus/ekspor data terbukti bekerja; nol konten palsu.
 4. **Keamanan:** item 🔴 & 🟠 checklist tertutup dengan bukti; tes otorisasi (A/B/admin/anon) hijau; tidak ada secret di repo/riwayat; monitoring & backup aktif (restore pernah diuji).
 5. **SEO:** semua schema §7 yang berstatus ✅ lolos validator dan ada di HTML mentah; sitemap & robots benar; Search Console terpasang.
-6. **UX:** alur beli (katalog → bayar → lacak) mulus di ponsel; audit aksesibilitas dasar lolos; tidak ada teks/terjemahan setengah jadi.
+6. **UX:** alur beli (katalog → bayar → lacak) mulus di ponsel; arah desain dari `DESIGN.md` terpasang dan Delivery Gate antislop PASS dengan bukti; Lighthouse mobile memenuhi ambang yang disepakati; tidak ada teks/terjemahan setengah jadi.
 7. **Checklist bagian 4** dicentang satu per satu dengan bukti (bukan klaim).
 
 ---
