@@ -103,11 +103,14 @@ Dari folder `batik-ecommerce`:
 node scripts/verify-db.mjs
 ```
 
-Hasil yang diharapkan:
+Hasil yang diharapkan: deretan baris `PASS ...` lalu ditutup:
 
 ```text
 DB OK
 ```
+
+Skrip memeriksa tabel/RLS/privilege, uji balapan stok, idempotency, dan
+pembatalan — semuanya harus `PASS`; satu `FAIL` berarti `DB FAIL` (exit code 1).
 
 Kalau muncul `DB FAIL`:
 
@@ -119,7 +122,15 @@ Kalau muncul `DB FAIL`:
 ## 6. Yang dilakukan agent setelah ini
 
 - `supabase link --project-ref <project-ref>` (memakai `SUPABASE_ACCESS_TOKEN`).
-- Menjalankan migrasi dari `supabase/migrations/`.
+- Menjalankan migrasi dari `supabase/migrations/`:
+
+  ```powershell
+  npx supabase db push --db-url $env:SUPABASE_DB_URL
+  ```
+
+  **Catatan:** `supabase db push --linked` bisa gagal dengan
+  `DbConfigIpv6Error` di jaringan tanpa IPv6 karena CLI mencoba koneksi direct.
+  Selalu pakai `--db-url` dengan URI **Session pooler** dari `.env`.
 - Menambah assertion ke `scripts/verify-db.mjs` di task berikutnya.
 
 ## Aturan keamanan
