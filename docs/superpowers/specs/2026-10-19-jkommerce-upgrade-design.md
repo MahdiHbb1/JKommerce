@@ -94,6 +94,8 @@ Keputusan yang **saya** (perancang) ambil dan pemilik boleh bantah — lihat §9
 11. Belum ada halaman legal apa pun; belum ada pencatat consent; tidak ada alur hapus/ekspor data.
 12. Sisa pekerjaan Xendit (3 Edge Function, halaman success/failed, env, terjemahan) — sesuai K2 akan dibongkar dan diganti adapter.
 13. `CREATE`-an Xendit belum di-commit (still working tree) — perlu dirapikan saat Stage 0/2 supaya history mencerminkan kenyataan (hapus, bukan tinggalkan zombie).
+14. **Checkout menagih baris "Pajak (PPN 11%)" hardcoded** (`Checkout.jsx`) tanpa dasar — kalau pemilik bukan PKP, ini klaim + pungutan yang salah (anti-goal). Sekaligus copy gratis ongkir **saling bertentangan** di file yang sama ("semua pesanan" vs ">Rp 100.000" vs catatan ≥Rp 1.000.000) — dua-duanya wajib diputuskan pemilik (§9.1 no.3 & 11) sebelum checkout dianggap benar.
+15. **Halaman produk menampilkan 3 ulasan karangan + rata-rata rating per produk dan form "tulis ulasan" yang tidak menyimpan ke mana pun** (`ProductDetail.jsx` + localStorage) — ikut masuk daftar hapus Stage 4; setelah modul review asli dibangun (post-launch), baru boleh ada bintang/ulasan di UI maupun markup.
 
 ---
 
@@ -150,6 +152,8 @@ Tabel baru/perubahan (detail kolom final diserahkan ke builder, tapi tabel & per
 | `shipping_zones` | Zona ongkir & estimasi hari | Sumber `OfferShippingDetails` + perhitungan checkout |
 | `data_requests` | Permintaan hapus/ekspor (opsional kalau self-service penuh) | #20 |
 
+**Aturan uang (berlaku di semua tabel & UI):** yang tampil = yang dibayar. Harga di `Offer`/katalog = harga final; tidak ada baris pajak, biaya layanan, atau biaya gateway yang muncul belakangan — fee Duitku diserap penjual (keputusan B14), kecuali pemilik memutuskan lain di §9.1 no.11. Ongkir & total selalu ditampilkan lengkap sebelum tombol bayar.
+
 **Aturan RLS (ringkas):**
 - `orders`: tidak ada policy insert anonim — semua penulisan lewat Edge Function service-role. Pembeli login hanya bisa `select` pesanannya sendiri; lookup guest lewat Edge Function (dipangkas field-nya).
 - Transisi `orders.status` tidak pernah dari client; hanya fungsi server (`SECURITY DEFINER`) yang memvalidasi state machine.
@@ -166,12 +170,14 @@ draft → pending_payment → paid → packing → shipped → delivered
 ```
 
 - **Stok direservasi saat order dibuat** (atomik, satu statement — pola `UPDATE ... WHERE stock_on_hand - stock_reserved >= n RETURNING`), dilepas saat `expired`/`cancelled`, dikonversi jadi penjualan saat `paid` (dua-duanya tercatat di `stock_movements`) — jawaban untuk #58 race condition.
+- **Pembatalan (keputusan B10):** pembeli boleh membatalkan sendiri **hanya selama `pending_payment`** (tautan di halaman pesanan + email); stok dilepas otomatis. Setelah dibayar, pembatalan lewat admin + mengikuti kebijakan retur/refund (anti-goal "sulit membatalkan" tetap terjaga karena state awal selalu bisa dibatalkan sendiri).
+- **Model stok (menunggu jawaban pemilik §9.1 no.5):** sistem dirancang mendukung dua mode — (a) **keping unik** (satu desain = satu barang, stok 0/1, varian hanya info), (b) **SKU berulang** per ukuran/warna dengan stok masing-masing. Mode dipilih per produk saat seed; skema `product_variants` tetap dipakai untuk keduanya (mode unik = satu varian default).
 - Kedaluwarsa: `expires_at` 24 jam untuk manual (transfer bank makan waktu) dan mengikuti `expiry_period` Duitku untuk gateway; job terjadwal (`pg_cron` atau cron Edge Function) membatalkan & melepas stok (#57).
 - Idempotensi: `create-order` menerima kunci idempotensi dari client untuk mencegah dobel-submit (double-click / retry jaringan).
 
 ### 5.5 Panel admin (fitur minimum)
 
-Satu route `/admin` (login + MFA; UI berbahasa Indonesia; boleh tidak bilingual):
+Satu route `/admin` (login + MFA; UI berbahasa Indonesia; boleh tidak bilingual; **dioptimalkan untuk ponsel** — operator tunggal bekerja dari HP, jadi verifikasi bukti bayar, edit stok, dan input resi wajib nyaman di layar kecil, keputusan B11):
 
 1. **Pesanan** — daftar + filter status; detail: item, alamat, bukti bayar (tampil inline), tombol aksi: verifikasi/tolak bayar, input kurir + resi, ubah status, catatan internal.
 2. **Produk** — CRUD produk & varian, edit stok (dengan alasan), tandai featured, unggah gambar (otomatis dioptimasi), aktif/nonaktif.
@@ -184,15 +190,17 @@ Satu route `/admin` (login + MFA; UI berbahasa Indonesia; boleh tidak bilingual)
 
 - **Email transaksional** via **Resend** (free 100/hari): konfirmasi pesanan ke pembeli (berisi ringkasan + instruksi bayar/link), email "pembayaran diterima", "pesanan dikirim (+resi)". Domain pengirim memakai domain sendiri (verifikasi DNS). Kalau volume nanti >100/hari, opsi upgrade disebutkan.
 - **Pemberitahuan pemilik:** email ke alamat pemilik untuk setiap pesanan baru & pembayaran terverifikasi. WhatsApp API berbayar (Fonnte dsb.) dicatat sebagai opsi nanti — v1 cukup email + lonceng di panel admin.
-- **Unsubscribe (#18):** tautan satu-klik (token) untuk newsletter; header `List-Unsubscribe` untuk email marketing; email transaksional tidak disisipi promosi.
+- **Unsubscribe (#18):** tautan satu-klik (token, endpoint publik tanpa login) untuk semua email yang kita kirim. **Cakupan newsletter di v1 (keputusan B12): situs mengumpulkan langganan + menyediakan unsubscribe yang benar-benar bekerja, tapi TIDAK membangun editor kampanye.** Pengiriman pengumuman dilakukan pemilik lewat Resend dengan template yang disiapkan di runbook; autentikasi SPF/DKIM domain diatur sekali. Kuota email transaksional (pesanan) dipisahkan dari kampanye supaya email uang tidak pernah ketahan karena blast. Campaign composer (kalau perlu) masuk backlog pasca-launch.
 
 ### 5.7 SEO, rendering & konten
 
 - **JSON-LD builder** (`src/lib/schema/`): satu fungsi `graph(...nodes)` + sub-builder per tipe (organization, productPage, shopListing, blogPost, faq, policyPage, breadcrumb). Semua nilai dibaca dari data yang sama dengan UI (tidak ada angka hardcode). Escape `<` → `\u003c` (#anti-XSS di file schema).
 - **Breadcrumb navigation yang benar-benar tampil** ditambahkan di halaman produk/kategori/blog/kebijakan (syarat schema #16).
 - **Prerender saat build** (Stage 6) untuk rute: `/`, `/shop`, `/product/:slug`, `/about`, `/faq`, `/blog`, `/blog/:slug`, halaman kebijakan. Verifikasi: "View Source" harus memuat JSON-LD; lolos Rich Results Test & validator.schema.org.
+- **Kesegaran prerender (keputusan B13):** supaya `availability`/harga di HTML mentah tidak berbohong setelah pemilik mengedit dari admin, build ulang dipicu otomatis: (a) tombol "terbitkan" untuk konten, dan (b) **DB trigger pada perubahan stok/harga/produk → memanggil deploy hook hosting** (target: tercermin dalam hitungan menit). Pengguna manusia tetap melihat data live karena aplikasi men-refresh dari DB setelah hydrate; yang dijamin "tidak basi" adalah sinyal crawlernya. Di runbook dicatat: kalau build gagal, notifikasi ke pemilik + halaman tetap versi terakhir yang sah.
 - **sitemap.xml & robots.txt** digenerate saat build dari data Supabase; canonical + meta per halaman (komponen `PageMeta` sudah ada, akan digenralkan).
 - **Konten awal** (draft oleh builder, direview pemilik — wajib asli, bukan karangan): 6–8 artikel (mis. "Batik Tulis vs Cap vs Printing", "Makna Motif Parang", "Cara Merawat Batik Tulis", "Panduan Ukuran", "Kisah Janoer Koening" — butuh input pemilik), ~10 FAQ nyata (ongkir, retur, ukuran, perawatan, metode bayar, custom order).
+- **Bahasa konten (keputusan B9):** UI tetap bilingual id/en seperti sekarang; **konten dari DB** (produk, artikel, halaman legal, email) berbahasa Indonesia dulu di v1, dengan struktur kolom terjemahan yang siap diisi (mis. `name_en` opsional) — biar tidak ada terjemahan setengah jadi yang bisa lolos ke produksi. Versi EN penuh masuk backlog pasca-launch.
 - Kalau konten belum siap saat launch, schema terkait (BlogPosting/Person) **tidak dipaksakan** — dipasang saat artikel benar-benar terbit.
 
 ### 5.8 Domain & hosting
@@ -223,7 +231,7 @@ Satu route `/admin` (login + MFA; UI berbahasa Indonesia; boleh tidak bilingual)
 | 17 | Age (data anak) | Batas usia di S&K (18+/atau dengan izin orang tua); tanpa age gate rumit karena konten dewasa umum |
 | 18 | Unsubscribe | Satu-klik via token + `List-Unsubscribe` (Resend mendukung); transaksional bebas promosi |
 | 19 | Lisensi aset | Font self-host (OFL); gambar produk = milik pemilik (dimverifikasi §9.1 no.5); gambar dekoratif/ilustrasi ditinjau satu-satu; dependensi via `license-checker` dicatat |
-| 20 | Hapus & ekspor data | Self-service di halaman Akun: ekspor JSON (Edge Function) + hapus akun (anonimisasi; record transaksi yang wajib disimpan (pajak) dipertahankan tanpa data pribadi excess; dijelaskan di policy). Ada pihak ketiga yang dihubungi: Resend (hapus kontak), Supabase (cascade) — checklist ditulis di runbook |
+| 20 | Hapus & ekspor data | **Pembeli login:** self-service di halaman Akun (ekspor JSON + hapus akun via Edge Function, anonimisasi; record transaksi yang wajib disimpan dipertahankan tanpa data pribadi berlebih; dijelaskan di policy). **Pembeli guest (keputusan B15):** form permintaan publik (email + nomor pesanan) → verifikasi lewat tautan email → masuk antrean `data_requests` yang diproses pemilik dari panel admin. Saat pendaftaran akun, pesanan lama dengan email sama otomatis tertaut (`orders.user_id`) supaya hak ini berlaku penuh. Pihak ketiga yang dibersihkan: Resend (kontak), Supabase (cascade) — checklist di runbook |
 
 ### 5.10 Keamanan (peta checklist Bagian 3)
 
@@ -253,7 +261,7 @@ Jawaban singkat: **hampir semua bisa, asal datanya nyata; empat di antaranya but
 | # | Schema | Status | Syarat / Catatan |
 |---|---|---|---|
 | 1 | Product | ✅ Stage 6 | Dari tabel `products`; SKU nyata; **tanpa GTIN palsu** (batik bermerek sendiri biasanya tak punya barcode — properti dihilangkan, bukan diisi karangan) |
-| 2 | ProductGroup | ✅ Stage 6 | Dari `product_variants` (ukuran/warna) — baru bermakna setelah varian pindah ke DB (B3) |
+| 2 | ProductGroup | ✅ Stage 6 | Dari `product_variants` (ukuran/warna) — baru bermakna setelah varian pindah ke DB (B3); kalau produknya keping unik, ProductGroup tidak dipakai untuk produk itu |
 | 3 | Offer | ✅ Stage 6 | Harga & `availability` dari stok real-time DB (`InStock/OutOfStock` mengikuti `stock_available`) |
 | 4 | Brand | ✅ Stage 6 | Brand sendiri; `sameAs` hanya untuk akun sosial yang benar-benar dipakai |
 | 5 | MerchantReturnPolicy | ✅ Stage 6 | Setelah pemilik memutuskan kebijakan retur (§9.1 no.2) dan halaman retur tayang — angka di markup = angka di halaman |
@@ -323,22 +331,33 @@ Satu stage = satu sesi kerja yang bisa direview pemilik sebelum lanjut. Urutanny
 
 1. **Identitas usaha** untuk halaman legal/footer/schema: nama yang mau tampil, kota & alamat (mau dipublikasikan atau tidak), email bisnis, nomor WhatsApp bisnis, akun Instagram/TikTok resmi (kalau ada).
 2. **Kebijakan retur**: berapa hari (lazim 7), kondisi (label masih terpasang?), siapa menanggung ongkir retur, boleh tukar ukuran?, produk custom bisa retur?
-3. **Ongkir & kurir**: tarif per zona (contoh: Jawa Rp x, luar Jawa Rp y), estimasi hari, kurir yang dipakai; mau lanjut pakai perhitungan manual per pesanan atau tarif zona dulu?
+3. **Ongkir & kurir**: tarif per zona (contoh: Jawa Rp x, luar Jawa Rp y), estimasi hari, kurir yang dipakai; mau lanjut pakai perhitungan manual per pesanan atau tarif zona dulu? **Dan: ada promo gratis ongkir atau tidak, dengan syarat apa** — copy checkout sekarang saling bertentangan (§3 no.14) dan harus satu versi yang benar.
 4. **Rekening/e-wallet + QRIS** untuk jalur transfer manual (gambar QRIS disiapkan).
-5. **Verifikasi katalog**: dari 14 produk — harga final, stok nyata, foto asli (dan hak pakainya), berat/dimensi paket untuk ongkir.
+5. **Verifikasi katalog & model stok**: dari 14 produk — harga final, stok nyata, foto asli (dan hak pakainya), berat/dimensi paket untuk ongkir; **dan: tiap produk itu keping unik (satu desain satu barang) atau stok berulang per ukuran/warna?** (menentukan cara isi stok harian & schema varian).
 6. **Konfirmasi akun**: bikin project Supabase (dipandu), daftar Duitku (dipandu; siapkan KTP — perorangan), beli domain, akun Cloudflare, akun Resend. Semua ini pekerjaan pemilik dengan panduan; builder tidak menerima kata sandi.
 7. **B2B/grosir**: ada rencana jual ke reseller/toko? (kalau ya → modul inquiry grosir masuk backlog terprioritas).
 8. **Penulis konten**: nama penulis untuk artikel (Person schema) dan siapa yang me-review draf (asumsi: pemilik, dengan masukan; brand story "Janoer Koening" perlu cerita nyata dari pemilik).
 9. **Setuju anggaran**: domain ±Rp150–300rb/tahun; fee Duitku per transaksi (tergantung metode); Rp0 untuk layanan gratis; opsi berbayar masa depan (Supabase Pro $25/bln saat data besar, Resend/WA upgrade) — semua opsional & ditunda sampai perlu.
-10. **Konfirmasi bahasa**: Indonesia utama + toggle English dipertahankan?
+10. **Konfirmasi bahasa**: Indonesia utama + toggle English dipertahankan? (keputusan awal B9 — konten Indonesia dulu)
+11. **Pajak (PKP atau bukan)**: apakah kamu terdaftar PKP / memungut PPN? Checkout sekarang menagih "Pajak (PPN 11%)" tanpa dasar (§3 no.14). Default usulan saya: **bukan PKP → baris pajak dihapus, harga di katalog = harga final** (keputusan B14); kalau PKP, kita desain blok pajak + nota dengan benar.
 
 ### 9.2 Keputusan perancang yang perlu dicek pemilik (silakan bantah)
 
 - B1 Cloudflare Pages (bukan Vercel Hobby — pembatasan komersial; Vercel Pro berbayar).
 - B2 Tetap SPA + prerender, bukan migrasi Next.js sekarang.
-- B3 Produk pindah ke Supabase + varian (stok per ukuran/warna).
-- B7 Blok fitur AI di checklist dinyatakan N/A.
-- B8 Sesi localStorage dengan mitigasi, ditinjau saat SSR.
+- B3 Produk pindah ke Supabase + varian (mendukung mode keping unik maupun SKU berulang — pemilik memilih per produk, §9.1 no.5).
+- B4 JSON-LD dibangun satu modul dari data yang sama dengan UI.
+- B5 Tanpa pixel analytics; Plausible cookieless opsional → tidak ada consent banner non-esensial di v1.
+- B6 Font self-host (OFL); tidak ada CDN font pihak ketiga.
+- B7 Blok fitur AI di checklist dinyatakan N/A (tidak ada fitur AI).
+- B8 Sesi localStorage dengan mitigasi CSP; ditinjau saat SSR.
+- B9 Konten DB (produk/blog/legal/email) Indonesia dulu; UI tetap bilingual; kolom terjemahan disiapkan.
+- B10 Pembeli hanya bisa membatalkan sendiri saat `pending_payment`; setelah itu lewat admin/kebijakan retur.
+- B11 Panel admin mobile-first (operator bekerja dari HP).
+- B12 Newsletter v1 = kumpulkan + unsubscribe nyata; kampanye dikirim pemilik via Resend (runbook); kuota transaksional dipisah.
+- B13 Prerender di-refresh otomatis via deploy hook (trigger DB & tombol publish) supaya markup tidak basi.
+- B14 Harga katalog = harga final; tanpa baris pajak/biaya tersembunyi; fee gateway diserap penjual (kecuali pemilik bilang PKP, §9.1 no.11).
+- B15 Pembeli guest tetap bisa ekspor/hapus data via form publik + verifikasi email + antrean di admin; pesanan lama tertaut otomatis saat daftar akun.
 - Retur default *draf* 7 hari (selama pemilik belum menjawab §9.1 no.2, angka ini hanya placeholder untuk desain — tidak boleh tayang sebelum dijawab).
 
 ---
