@@ -205,6 +205,46 @@ try {
     JSON.stringify(tax),
   );
 
+  const { rows: seedProductRows } = await admin.query(
+    'select count(*)::int as count from public.products',
+  );
+  check(
+    'seed: 14 produk',
+    seedProductRows[0].count === 14,
+    `ditemukan ${seedProductRows[0].count}`,
+  );
+
+  const { rows: seedVariantRows } = await admin.query(
+    'select count(*)::int as count from public.product_variants',
+  );
+  check(
+    'seed: 144 varian',
+    seedVariantRows[0].count === 144,
+    `ditemukan ${seedVariantRows[0].count}`,
+  );
+
+  const { rows: orphanRows } = await admin.query(
+    `select count(*)::int as count
+       from public.products p
+      where not exists (
+        select 1 from public.product_variants v where v.product_id = p.id
+      )`,
+  );
+  check(
+    'seed: setiap produk punya varian',
+    orphanRows[0].count === 0,
+    `produk tanpa varian: ${orphanRows[0].count}`,
+  );
+
+  const { rows: verificationRows } = await admin.query(
+    'select count(*)::int as count from public.products where needs_verification = true',
+  );
+  check(
+    'seed: konten ditandai menunggu verifikasi pemilik',
+    verificationRows[0].count === 14,
+    `flagged: ${verificationRows[0].count}`,
+  );
+
   const anonOrders = await anonQuery('select id from public.orders limit 1');
   check('anon ditolak select orders', !anonOrders.ok);
 

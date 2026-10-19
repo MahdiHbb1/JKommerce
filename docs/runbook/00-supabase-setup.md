@@ -21,8 +21,10 @@ Buka project di dashboard, lalu:
   Key ini memang publik (aman dipakai di browser), tetapi tetap jangan diganti
   dengan `service_role`.
 
-> `service_role` key **tidak boleh** masuk `.env`, browser, chat, atau commit.
-> Key itu hanya dipakai nanti di Supabase Edge Function lewat `supabase secrets set`.
+> `service_role` / secret key **tidak boleh** masuk browser, chat, atau commit.
+> Untuk seed lokal sekali jalan, kunci boleh dimuat ke environment proses
+> (tidak ditulis ke repo); untuk produksi, simpan hanya di Supabase Edge
+> Function secrets.
 
 ## 2. Isi `.env` lokal
 
@@ -132,6 +134,31 @@ Kalau muncul `DB FAIL`:
   `DbConfigIpv6Error` di jaringan tanpa IPv6 karena CLI mencoba koneksi direct.
   Selalu pakai `--db-url` dengan URI **Session pooler** dari `.env`.
 - Menambah assertion ke `scripts/verify-db.mjs` di task berikutnya.
+
+## 7. Seed katalog (lokal, sekali)
+
+Setelah migrasi diterapkan:
+
+1. Agent memuat kunci `service_role`/secret dari Management API memakai token
+   scoped (izin **API Key Secrets Read**) ke environment proses. Nilainya tidak
+   ditampilkan dan tidak ditulis ke repo.
+2. Jalankan:
+
+   ```bash
+   node scripts/seed-products.mjs
+   ```
+
+   Hasil yang diharapkan: `14 produk`, `144 varian`, `10 gambar`, lalu
+   `Seed OK`.
+3. Script **idempoten**: dijalankan ulang akan melewati produk/varian/gambar
+   yang sudah ada. Stok varian yang sudah ada **tidak diubah**, jadi aman
+   dijalankan lagi setelah pemilik mengubah stok.
+4. Alternatif manual: tambahkan sementara
+   `SUPABASE_SERVICE_ROLE_KEY=...` ke `.env`, jalankan script, lalu hapus
+   barisnya. Jangan pernah commit atau mengirim kunci ini ke chat.
+5. Kalau muncul `Butuh SUPABASE_URL ...`, pastikan `.env` disimpan sebagai
+   **UTF-8 tanpa BOM**. Karakter BOM tak terlihat di awal nama variabel membuat
+   Node/Vite tidak membaca variabel itu; minta agent membersihkannya.
 
 ## Aturan keamanan
 
