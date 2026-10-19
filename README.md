@@ -92,11 +92,21 @@ For full functionality including order persistence and payment processing, you n
      ```
    - Deploy the Edge Function in `supabase/functions/lookup-order/` for secure order lookup
 
-3. **Configure Midtrans** (Required for payment processing)
-   - Create a Midtrans sandbox account at [midtrans.com](https://midtrans.com)
-   - Get your client key from the Midtrans dashboard
-   - Set up a server-side token endpoint (or use a test endpoint)
-   - Add Midtrans configuration to `.env`
+3. **Configure Xendit** (Required for payment processing)
+   - Create a Xendit account at [xendit.co](https://xendit.co)
+   - Generate Secret Key from API Keys page (click "Buat secret key baru")
+   - Set Xendit secrets via Supabase CLI:
+     ```bash
+     supabase secrets set XENDIT_SECRET_KEY=your-test-secret-key
+     supabase secrets set XENDIT_CALLBACK_TOKEN=your-verification-token
+     ```
+   - Deploy Edge Functions:
+     ```bash
+     supabase functions deploy create-invoice
+     supabase functions deploy xendit-webhook
+     ```
+   - Set webhook URL in Xendit dashboard to: `https://<project-ref>.supabase.co/functions/v1/xendit-webhook`
+   - Add Xendit redirect URLs to `.env` (VITE_XENDIT_SUCCESS_REDIRECT_URL, VITE_XENDIT_FAILURE_REDIRECT_URL)
 
 4. **Optional configurations**
    - Shipping quote endpoint for real-time shipping costs

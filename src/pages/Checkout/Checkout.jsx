@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useOrders } from '../../context/OrderContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useToast } from '../../context/ToastContext';
 import Button from '../../components/Button/Button';
 import { formatPrice } from '../../data/products';
 import PageMeta from '../../components/Seo/PageMeta';
@@ -13,19 +14,17 @@ const Checkout = () => {
   const { cart, getTotalPrice, clearCart } = useCart();
   const { addOrder } = useOrders();
   const { t, formatCurrency } = useTranslation();
+  const toast = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
-  const [isSnapReady, setIsSnapReady] = useState(false);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
-  const [gatewayMessage, setGatewayMessage] = useState('');
   const [shippingCost, setShippingCost] = useState(25000);
   const [isShippingQuoteLoading, setIsShippingQuoteLoading] = useState(false);
   const [shippingQuoteMessage, setShippingQuoteMessage] = useState('');
   const [voucherCode, setVoucherCode] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState(null);
-  const [voucherMessage, setVoucherMessage] = useState('');
   const whatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER;
 
   // Form states
@@ -39,7 +38,7 @@ const Checkout = () => {
     postalCode: ''
   });
 
-  const [paymentMethod, setPaymentMethod] = useState('midtrans-snap');
+  const [paymentMethod, setPaymentMethod] = useState('xendit-invoice');
   const [formErrors, setFormErrors] = useState({});
 
   // Redirect if cart is empty (but not after order is confirmed)
@@ -54,11 +53,10 @@ const Checkout = () => {
   const taxRate = 0.11; // 11% PPN
   const tax = subtotal * taxRate;
   const summaryItemCount = cart ? cart.reduce((count, item) => count + item.quantity, 0) : 0;
-  const midtransClientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
-  const midtransTokenEndpoint = import.meta.env.VITE_MIDTRANS_TOKEN_ENDPOINT;
-  const midtransSnapUrl = import.meta.env.VITE_MIDTRANS_SNAP_URL || 'https://app.sandbox.midtrans.com/snap/snap.js';
+  const xenditSuccessUrl = import.meta.env.VITE_XENDIT_SUCCESS_REDIRECT_URL;
+  const xenditFailureUrl = import.meta.env.VITE_XENDIT_FAILURE_REDIRECT_URL;
   const shippingQuoteEndpoint = import.meta.env.VITE_SHIPPING_QUOTE_ENDPOINT;
-  const isMidtransConfigured = Boolean(midtransClientKey && midtransTokenEndpoint);
+  const isXenditConfigured = Boolean(xenditSuccessUrl && xenditFailureUrl);
   const isShippingQuoteConfigured = Boolean(shippingQuoteEndpoint);
   const voucherCatalog = {
     BATIK10: { type: 'percent', value: 10 },
@@ -89,94 +87,12 @@ const Checkout = () => {
     return `JK-${Date.now().toString(36).toUpperCase()}`;
   };
 
-  const buildOrderPayload = (orderNum) => ({
-    order_id: orderNum,
-    gross_amount: Math.round(total),
-    currency: 'IDR',
-    customer_details: {
-      first_name: shippingInfo.fullName,
-      email: shippingInfo.email,
-      phone: shippingInfo.phone,
-      shipping_address: shippingInfo.address,
-      city: shippingInfo.city,
-      province: shippingInfo.province,
-      postal_code: shippingInfo.postalCode
-    },
-    item_details: (cart || []).map((item) => ({
-      id: String(item.id),
-      price: Math.round(item.price),
-      quantity: item.quantity,
-      name: item.name.slice(0, 50)
-    }))
-  });
-
-  const loadSnapScript = () => {
-    if (window.snap) {
-      setIsSnapReady(true);
-      return Promise.resolve();
-    }
-
-    const existingScript = document.querySelector('script[data-midtrans-snap="true"]');
-    if (existingScript) {
-      return new Promise((resolve, reject) => {
-        if (window.snap) {
-          setIsSnapReady(true);
-          resolve();
-          return;
-        }
-
-        existingScript.addEventListener('load', () => {
-          setIsSnapReady(true);
-          resolve();
-        }, { once: true });
-        existingScript.addEventListener('error', () => reject(new Error('Failed to load Snap.js')), { once: true });
-      });
-    }
-
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = midtransSnapUrl;
-      script.async = true;
-      script.setAttribute('data-midtrans-snap', 'true');
-      if (midtransClientKey) {
-        script.setAttribute('data-client-key', midtransClientKey);
-      }
-      script.onload = () => {
-        setIsSnapReady(true);
-        resolve();
-      };
-      script.onerror = () => reject(new Error('Failed to load Snap.js'));
-      document.head.appendChild(script);
-    });
-  };
-
-  const requestSnapToken = async (orderNum) => {
-    const response = await fetch(midtransTokenEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(buildOrderPayload(orderNum))
-    });
-
-    if (!response.ok) {
-      throw new Error('Token endpoint rejected the request');
-    }
-
-    const data = await response.json();
-    if (!data?.token) {
-      throw new Error('Midtrans token not returned');
-    }
-
-    return data.token;
-  };
-
   const finalizePaidOrder = (orderNum, paymentState = 'processing') => {
     const orderData = {
       orderNumber: orderNum,
       items: cart,
       shippingInfo,
-      paymentMethod: 'midtrans-snap',
+      paymentMethod: 'xendit-invoice',
       subtotal,
       tax,
       shipping: shippingCost,
@@ -241,13 +157,6 @@ const Checkout = () => {
     }
   };
 
-  useEffect(() => {
-    if (currentStep === 2 && isMidtransConfigured) {
-      loadSnapScript().catch(() => {
-        setGatewayMessage(t('checkout.snapUnavailable'));
-      });
-    }
-  }, [currentStep, isMidtransConfigured]);
 
   // Validate shipping form
   const validateShippingInfo = () => {
@@ -311,18 +220,17 @@ const Checkout = () => {
 
     if (!matchedVoucher) {
       setAppliedVoucher(null);
-      setVoucherMessage(t('checkout.invalidVoucher'));
+      toast.error(t('checkout.invalidVoucher'));
       return;
     }
 
     setAppliedVoucher({ code: normalizedCode, ...matchedVoucher });
-    setVoucherMessage(t('checkout.voucherApplied', { code: normalizedCode }));
+    toast.success(t('checkout.voucherApplied', { code: normalizedCode }));
   };
 
   const handleRemoveVoucher = () => {
     setVoucherCode('');
     setAppliedVoucher(null);
-    setVoucherMessage('');
   };
 
   const buildWhatsAppMessage = (referenceNumber) => {
@@ -360,7 +268,7 @@ const Checkout = () => {
 
   const handleWhatsAppFallback = () => {
     if (!whatsappNumber) {
-      setGatewayMessage(t('checkout.whatsappUnavailable'));
+      toast.error(t('checkout.whatsappUnavailable'));
       return;
     }
 
@@ -374,32 +282,54 @@ const Checkout = () => {
 
   // Handle order submission
   const handlePlaceOrder = async () => {
-    if (!isMidtransConfigured) {
-      setGatewayMessage(t('checkout.snapUnavailable'));
+    if (!isXenditConfigured) {
+      toast.error(t('checkout.paymentGatewayUnavailable'));
       return;
     }
 
     try {
       setIsSubmittingPayment(true);
-      setGatewayMessage('');
-      await loadSnapScript();
 
       const orderNum = generateOrderNumber();
-      const token = await requestSnapToken(orderNum);
+      
+      // Create order in local state first
+      finalizePaidOrder(orderNum, 'processing');
 
-      if (!window.snap?.pay) {
-        throw new Error('Snap.js is not available');
+      // Call Xendit create-invoice Edge Function
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/create-invoice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          order_number: orderNum,
+          amount: Math.round(total),
+          payer_email: shippingInfo.email,
+          items: (cart || []).map((item) => ({
+            name: item.name.slice(0, 50),
+            quantity: item.quantity,
+            price: Math.round(item.price)
+          })),
+          success_redirect_url: xenditSuccessUrl,
+          failure_redirect_url: xenditFailureUrl
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create payment invoice');
       }
 
-      window.snap.pay(token, {
-        onSuccess: () => finalizePaidOrder(orderNum, 'paid'),
-        onPending: () => finalizePaidOrder(orderNum, 'pending'),
-        onError: () => setGatewayMessage(t('common.error')),
-        onClose: () => setGatewayMessage(t('checkout.snapIntegrationNote'))
-      });
+      const data = await response.json();
+      if (!data?.invoice_url) {
+        throw new Error('Invoice URL not returned');
+      }
+
+      // Redirect to Xendit payment page
+      window.location.href = data.invoice_url;
     } catch (error) {
-      setGatewayMessage(error instanceof Error ? error.message : t('common.error'));
-    } finally {
+      toast.error(error instanceof Error ? error.message : t('common.error'));
       setIsSubmittingPayment(false);
     }
   };
@@ -407,7 +337,7 @@ const Checkout = () => {
   // Helper function for payment method names
   const getPaymentMethodName = (method) => {
     const methods = {
-      'midtrans-snap': t('checkout.midtransSnap')
+      'xendit-invoice': t('checkout.xenditInvoice')
     };
     return methods[method] || method;
   };
@@ -415,10 +345,10 @@ const Checkout = () => {
   // Render payment instructions based on selected method
   const renderPaymentInstructions = () => {
     switch (paymentMethod) {
-      case 'midtrans-snap':
+      case 'xendit-invoice':
         return (
           <div className="instructions-content">
-            <p>{t('checkout.snapIntegrationNote')}</p>
+            <p>{t('checkout.redirectingToPayment')}</p>
           </div>
         );
       default:
@@ -671,10 +601,7 @@ const Checkout = () => {
                       </button>
                     </div>
                   )}
-                  {voucherMessage && <p className={appliedVoucher ? 'gateway-note' : 'gateway-message'}>{voucherMessage}</p>}
                 </div>
-                {gatewayMessage && <p className="gateway-message">{gatewayMessage}</p>}
-                <p className="gateway-note">{t('checkout.snapIntegrationNote')}</p>
               </div>
             )}
 
