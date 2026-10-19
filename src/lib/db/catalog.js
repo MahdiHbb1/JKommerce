@@ -38,6 +38,7 @@ function mapProduct(row) {
     is_bestseller: Boolean(row.is_bestseller),
     needs_verification: Boolean(row.needs_verification),
     sort_order: Number(row.sort_order ?? 0),
+    created_at: row.created_at ?? null,
     variants: Array.isArray(row.product_variants)
       ? row.product_variants.map(mapVariant)
       : [],

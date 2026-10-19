@@ -378,7 +378,12 @@ export const translations = {
     // Shop
     shop: {
       title: 'Koleksi Batik',
-      description: 'Temukan karya batik Indonesia autentik, di mana setiap karya menceritakan kisah unik tentang warisan dan keahlian kerajinan.'
+      description: 'Temukan karya batik Indonesia autentik, di mana setiap karya menceritakan kisah unik tentang warisan dan keahlian kerajinan.',
+      loadError: 'Katalog belum bisa dimuat.',
+      loadErrorHint: 'Periksa koneksi Anda, lalu coba lagi.',
+      retry: 'Coba lagi',
+      emptyTitle: 'Belum ada produk',
+      emptyBody: 'Koleksi akan tampil di sini setelah produk aktif ditambahkan.'
     },
 
     // Notifications/Toasts
@@ -849,9 +854,24 @@ export const translations = {
       placeholder: 'Search batik...',
       searching: 'Searching...',
       results: 'results',
+      resultsFor: 'Search results for',
+      found: 'Found {count} products',
       noResults: 'No results found',
+      noProducts: 'No Products Found',
+      tryAdjusting: 'Try adjusting your filters to see more results',
       tryDifferent: 'Try different keywords',
       popularSearches: 'Popular Searches'
+    },
+
+    // Shop
+    shop: {
+      title: 'Batik Collection',
+      description: 'Discover authentic Indonesian batik, where every piece tells a unique story of heritage and craftsmanship.',
+      loadError: 'The catalog could not be loaded.',
+      loadErrorHint: 'Check your connection, then try again.',
+      retry: 'Try again',
+      emptyTitle: 'No products yet',
+      emptyBody: 'The collection will appear here once active products are added.'
     },
 
     // Notifications/Toasts

@@ -25,6 +25,7 @@
  * @property {boolean} is_bestseller
  * @property {boolean} needs_verification
  * @property {number} sort_order
+ * @property {string|null} created_at
  * @property {Variant[]} variants
  *
  * @typedef {Object} Zone

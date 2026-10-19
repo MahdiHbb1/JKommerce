@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import { useToast } from '../../context/ToastContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import ProductGrid from '../../components/ProductGrid/ProductGrid';
 import QuickView from '../../components/QuickView/QuickView';
 import Button from '../../components/Button/Button';
 import PageMeta from '../../components/Seo/PageMeta';
-import { getFeaturedProducts, getBestsellerProducts } from '../../data/products';
+import { ProductGridSkeleton } from '../../components/Skeleton/Skeleton';
+import { fetchProducts } from '../../lib/db/catalog';
+import { toCardProduct } from '../../lib/db/presenters';
 import parangImg from '../../assets/images/motif-parang.jpg';
 import kawungImg from '../../assets/images/motif-kawung.jpg';
 import kontemporerImg from '../../assets/images/motif-kontemporer.jpg';
@@ -16,15 +19,37 @@ import './Home.css';
 
 const Home = () => {
   const { addToCart } = useCart();
+  const { success } = useToast();
   const { t } = useTranslation();
   const [quickViewProduct, setQuickViewProduct] = useState(null);
-  
-  const featuredProducts = getFeaturedProducts().slice(0, 4);
-  const bestsellerProducts = getBestsellerProducts().slice(0, 4);
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+
+  const loadProducts = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const data = await fetchProducts();
+      setProducts(data.map(toCardProduct));
+    } catch (error) {
+      console.error('Gagal memuat katalog:', error);
+      setLoadError(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  const featuredProducts = products.filter((product) => product.featured).slice(0, 4);
+  const bestsellerProducts = products.filter((product) => product.bestseller).slice(0, 4);
 
   const handleAddToCart = (product) => {
     addToCart(product, 1);
-    alert(`✓ "${product.name}" ${t('notifications.addedToCart')}`);
+    success(t('notifications.addedToCart', { name: product.name }));
   };
 
   const handleQuickView = (product) => {
@@ -33,6 +58,36 @@ const Home = () => {
 
   const closeQuickView = () => {
     setQuickViewProduct(null);
+  };
+
+  const renderCollection = (items) => {
+    if (isLoading) {
+      return <ProductGridSkeleton count={4} />;
+    }
+
+    if (loadError) {
+      return (
+        <div role="alert" className="text-center py-12">
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+            {t('shop.loadError')}
+          </h3>
+          <p className="text-neutral-600 mb-6">
+            {t('shop.loadErrorHint')}
+          </p>
+          <Button variant="primary" onClick={loadProducts}>
+            {t('shop.retry')}
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <ProductGrid
+        products={items}
+        onAddToCart={handleAddToCart}
+        onQuickView={handleQuickView}
+      />
+    );
   };
 
   return (
@@ -169,11 +224,7 @@ const Home = () => {
               <Button variant="outline">{t('common.viewAll')}</Button>
             </Link>
           </div>
-          <ProductGrid
-            products={featuredProducts}
-            onAddToCart={handleAddToCart}
-            onQuickView={handleQuickView}
-          />
+          {renderCollection(featuredProducts)}
         </div>
       </section>
 
@@ -189,11 +240,7 @@ const Home = () => {
               <Button variant="outline">{t('common.viewAll')}</Button>
             </Link>
           </div>
-          <ProductGrid
-            products={bestsellerProducts}
-            onAddToCart={handleAddToCart}
-            onQuickView={handleQuickView}
-          />
+          {renderCollection(bestsellerProducts)}
         </div>
       </section>
 
