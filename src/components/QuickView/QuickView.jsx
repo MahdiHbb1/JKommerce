@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { formatPrice } from '../../data/products';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useToast } from '../../context/ToastContext';
@@ -45,8 +44,6 @@ const QuickView = ({ product, onClose }) => {
     };
   }, [product]);
 
-  if (!product) return null;
-
   const handleAddToCart = () => {
     const cartItem = {
       ...product,
@@ -84,10 +81,7 @@ const QuickView = ({ product, onClose }) => {
     return () => document.removeEventListener('keydown', handleEscapeKey);
   }, []);
 
-  useEffect(() => {
-    document.addEventListener('keydown', handleEscapeKey);
-    return () => document.removeEventListener('keydown', handleEscapeKey);
-  }, []);
+  if (!product) return null;
 
   return (
     <div 
