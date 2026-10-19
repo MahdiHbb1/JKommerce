@@ -15,6 +15,7 @@ Toko batik premium "Janoer Koening": React 18 + Vite + Tailwind 3 + Supabase. Op
 - Commit kecil per task (Conventional Commits). Jangan push tanpa instruksi.
 - Eksekusi mengikuti alur **subagent-driven**: satu task = implementasi + review independen sebelum lanjut.
 - Arsitektur v1 = **serverless**: Cloudflare Pages (SPA) + Supabase (Postgres/Auth/Storage/Edge Functions). Tidak ada VPS, nginx, PM2, atau OS server yang dikelola; jangan menambah komponen arsitektur baru tanpa persetujuan pemilik.
+- Framework: React 18 + Vite sampai Stage 1. Jangan migrasi framework di tengah plan; jalur upgrade resmi = React Router v7 framework mode (lihat desain §5.12).
 
 <!-- antislop:start -->
 ## antislop (mode DURING)

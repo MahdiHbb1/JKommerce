@@ -274,6 +274,21 @@ Satu route `/admin` (login + MFA; UI berbahasa Indonesia; boleh tidak bilingual;
 | CRM | Tidak perlu alat CRM untuk v1; panel admin memberi view pelanggan ringan (riwayat pesanan, kontak, catatan). Evaluasi pasca-launch. | Stage 3 |
 | Schema "saved IG / saved Threads" | **Perlu klarifikasi pemilik.** Default: tautan Instagram/Threads disimpan di `site_settings.social` dan tampil di footer; "simpan produk" = wishlist yang sudah ada; embed feed IG/Threads ditunda (butuh Meta API/oEmbed). | Stage 4/6 |
 
+### 5.12 Keputusan framework (19 Okt 2026)
+
+Kandidat yang dipertimbangkan: Next.js, React Router v7, Nuxt, SvelteKit.
+
+**Keputusan: tetap React 18 + Vite untuk Stage 0–1. Jalur upgrade resmi bila SEO/SSR menuntut = React Router v7 framework mode di Cloudflare. Tidak ada migrasi ke Next.js, Nuxt, atau SvelteKit.**
+
+| Kandidat | Penilaian untuk toko ini |
+|---|---|
+| **React + Vite (sekarang)** | Kode yang sudah ada (routing, komponen, context, Supabase client) langsung dipakai. SPA cepat & murah di Cloudflare Pages. SEO ditambal lewat prerender halaman publik + JSON-LD di Stage 6. |
+| **React Router v7** | **Pilihan upgrade.** Masih React (komponen lama dipakai), berbasis Vite, mendukung SPA/SSG/SSR per-route, berjalan native di Cloudflare Workers. Migrasi bertahap: SPA mode → prerender → SSR. Cocok untuk form checkout (progressive enhancement) dan tidak mengunci ke Vercel. |
+| Next.js | Ekosistem & SEO terbaik, tetapi rewrite penuh dari SPA Vite (App Router, server/client components). Host terbaiknya (Vercel) berbayar untuk komersial; di Cloudflare butuh adapter OpenNext — menambah moving parts. ISR tidak dibutuhkan untuk katalog <200 SKU. |
+| Nuxt / SvelteKit | Rewrite total, membuang kode React yang sudah teruji; ekosistem komponen e-commerce lebih kecil. Tidak ada keunggulan yang membenarkan biaya itu. |
+
+**Urutan eksekusi:** selesaikan transaksi & backend di Stage 0–1 sebagai SPA; migrasi routing ke React Router v7 **sebelum/seiring Stage 6** (SEO & konten): mulai SPA mode, lalu prerender halaman publik (home, katalog, produk, blog) dengan deploy hook saat katalog berubah, lalu SSR bila stok/harga perlu selalu segar. Sampai migrasi, tetap `react-router-dom` v6; jangan menambah library routing lain.
+
 ---
 
 ## 6. Peta Checklist `checklist-legal-backend-security-app.md` → Pekerjaan
