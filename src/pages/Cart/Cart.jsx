@@ -87,7 +87,7 @@ const Cart = () => {
                 </div>
 
                 <div className="cart-item-details">
-                  <Link to={`/product/${item.id}`} className="cart-item-name">
+                  <Link to={`/product/${item.slug || item.id}`} className="cart-item-name">
                     {item.name}
                   </Link>
                   <p className="cart-item-category">{item.category}</p>

@@ -83,12 +83,12 @@ const Wishlist = () => {
                 </svg>
               </button>
 
-              <Link to={`/product/${item.id}`} className="wishlist-image-link">
+              <Link to={`/product/${item.slug || item.id}`} className="wishlist-image-link">
                 <img src={item.images?.[0] || item.image} alt={item.name} className="wishlist-image" />
               </Link>
 
               <div className="wishlist-info">
-                <Link to={`/product/${item.id}`} className="wishlist-name">
+                <Link to={`/product/${item.slug || item.id}`} className="wishlist-name">
                   {item.name}
                 </Link>
                 <p className="wishlist-category">{item.category} · {item.technique}</p>
@@ -101,7 +101,7 @@ const Wishlist = () => {
                   >
                     Add to Cart
                   </button>
-                  <Link to={`/product/${item.id}`} className="btn btn-secondary">
+                  <Link to={`/product/${item.slug || item.id}`} className="btn btn-secondary">
                     View Details
                   </Link>
                 </div>

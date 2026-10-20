@@ -122,7 +122,7 @@ const ProductCard = ({ product, onAddToCart, onQuickView }) => {
 
   return (
     <div className="group relative bg-white rounded-lg shadow-soft hover:shadow-hover transition-all duration-300">
-      <Link to={`/product/${id}`} className="block">
+      <Link to={`/product/${slug || id}`} className="block">
         {/* Image Container */}
         <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg bg-neutral-100">
           {/* Category Badge - Top Left */}

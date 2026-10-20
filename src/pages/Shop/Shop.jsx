@@ -228,7 +228,7 @@ const Shop = () => {
             {t('shop.loadErrorHint')}
           </p>
           <Button variant="primary" size="large" onClick={loadProducts}>
-            {t('shop.retry')}
+            {t('common.retry')}
           </Button>
         </div>
       );

@@ -50,8 +50,8 @@ const SearchBar = ({ isMobile, onClose }) => {
     }
   };
 
-  const handleProductClick = (productId) => {
-    navigate(`/product/${productId}`);
+  const handleProductClick = (product) => {
+    navigate(`/product/${product.slug || product.id}`);
     setShowResults(false);
     setSearchTerm('');
     if (onClose) onClose();
@@ -94,7 +94,7 @@ const SearchBar = ({ isMobile, onClose }) => {
               <div 
                 key={product.id}
                 className="search-result-item"
-                onClick={() => handleProductClick(product.id)}
+                onClick={() => handleProductClick(product)}
               >
                 <img src={product.images?.[0] || product.image} alt={product.name} className="result-image" />
                 <div className="result-info">

@@ -30,6 +30,21 @@ export const CartProvider = ({ children }) => {
     return Number.isFinite(stock) && stock > 0 ? stock : Infinity;
   };
 
+  // Cari varian yang cocok dengan pilihan ukuran/warna. Dipakai semua jalur
+  // add-to-cart (Shop, QuickView, ProductDetail) supaya item keranjang selalu
+  // membawa variant_id yang nanti dipakai checkout.
+  const resolveVariant = (product, selectedSize, selectedColor) => {
+    const variants = Array.isArray(product?.variants) ? product.variants : [];
+    return (
+      variants.find(
+        (variant) =>
+          variant.is_active !== false &&
+          (selectedSize == null || variant.size === selectedSize) &&
+          (selectedColor == null || variant.color === selectedColor),
+      ) ?? null
+    );
+  };
+
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     try {
@@ -64,6 +79,7 @@ export const CartProvider = ({ children }) => {
           quantity: item.quantity,
           selectedSize: item.selected_size,
           selectedColor: item.selected_color,
+          variantId: item.variant_id,
           cartItemId: item.cart_item_id
         }));
 
@@ -85,6 +101,7 @@ export const CartProvider = ({ children }) => {
             .upsert({
               user_id: user.id,
               product_id: item.id,
+              variant_id: item.variantId ?? null,
               quantity: item.quantity,
               selected_size: item.selectedSize,
               selected_color: item.selectedColor,
@@ -120,6 +137,7 @@ export const CartProvider = ({ children }) => {
             .insert({
               user_id: user.id,
               product_id: item.id,
+              variant_id: item.variantId ?? null,
               quantity: item.quantity,
               selected_size: item.selectedSize,
               selected_color: item.selectedColor,
@@ -135,37 +153,56 @@ export const CartProvider = ({ children }) => {
   }, [cartItems, user]);
 
   // Add item to cart
-  const addToCart = (product, quantity = 1, selectedSize = null, selectedColor = null) => {
+  const addToCart = (product, quantity = 1, selectedSize = null, selectedColor = null, variant = null) => {
+    // QuickView mengirim pilihan di dalam objek produk, bukan sebagai argumen.
+    const effectiveSize = selectedSize ?? product?.selectedSize ?? null;
+    const effectiveColor = selectedColor ?? product?.selectedColor ?? null;
+    const requestedQuantity = Math.max(
+      1,
+      quantity > 1 ? quantity : Number(product?.quantity) || 1,
+    );
+    const resolvedVariant = variant ?? resolveVariant(product, effectiveSize, effectiveColor);
+
     setCartItems(prevItems => {
-      const maxQuantity = getMaxQuantity(product);
+      const variantStock = resolvedVariant ? Number(resolvedVariant.stock_available ?? 0) : null;
+      const maxQuantity =
+        variantStock !== null ? Math.max(0, variantStock) : getMaxQuantity(product);
+
+      // Varian yang dipilih sedang habis — jangan masukkan apa pun.
+      if (maxQuantity <= 0) {
+        return prevItems;
+      }
 
       // Check if item already exists with same product, size, and color
       const existingItemIndex = prevItems.findIndex(
         item => 
           item.id === product.id && 
-          item.selectedSize === selectedSize && 
-          item.selectedColor === selectedColor
+          item.selectedSize === effectiveSize && 
+          item.selectedColor === effectiveColor
       );
 
       if (existingItemIndex > -1) {
         // Update quantity of existing item
         const updatedItems = [...prevItems];
-        const nextQuantity = Math.min(updatedItems[existingItemIndex].quantity + quantity, maxQuantity);
+        const nextQuantity = Math.min(updatedItems[existingItemIndex].quantity + requestedQuantity, maxQuantity);
         updatedItems[existingItemIndex] = {
           ...updatedItems[existingItemIndex],
           quantity: nextQuantity
         };
         return updatedItems;
       } else {
-        const nextQuantity = Math.min(quantity, maxQuantity);
+        const nextQuantity = Math.min(requestedQuantity, maxQuantity);
 
         // Add new item
         return [...prevItems, {
           ...product,
           quantity: nextQuantity,
-          selectedSize: selectedSize || (product.sizes ? product.sizes[0] : null),
-          selectedColor: selectedColor || (product.colors ? product.colors[0] : null),
-          cartItemId: `${product.id}-${selectedSize || 'default'}-${selectedColor || 'default'}-${Date.now()}`
+          selectedSize: effectiveSize || resolvedVariant?.size || (product.sizes ? product.sizes[0] : null),
+          selectedColor: effectiveColor || resolvedVariant?.color || (product.colors ? product.colors[0] : null),
+          variantId: resolvedVariant?.id ?? null,
+          variantSku: resolvedVariant?.sku ?? null,
+          ...(resolvedVariant ? { stock: maxQuantity } : {}),
+          cartItemId: `${product.id}-${effectiveSize || resolvedVariant?.size || 'default'}-${effectiveColor || resolvedVariant?.color || 'default'}-${Date.now()}`
         }];
       }
     });

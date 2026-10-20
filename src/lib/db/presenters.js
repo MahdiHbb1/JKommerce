@@ -20,8 +20,6 @@ export function toCardProduct(product) {
 
   return {
     ...product,
-    productId: product.id,
-    id: product.slug,
     price: product.price_idr,
     stock,
     sizes,
