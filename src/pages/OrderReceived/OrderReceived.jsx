@@ -121,7 +121,13 @@ const OrderReceived = () => {
         ) : null}
 
         <div className="order-received-actions">
-          <Button onClick={() => navigate('/order-lookup')}>
+          <Button
+            onClick={() =>
+              navigate(
+                `/order-lookup?order=${encodeURIComponent(order.order_number)}`,
+              )
+            }
+          >
             {t('checkout.trackOrder')}
           </Button>
           <Button variant="outline" onClick={() => navigate('/shop')}>
