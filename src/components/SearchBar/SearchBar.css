@@ -98,6 +98,18 @@
   flex-shrink: 0;
 }
 
+.result-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: #1f2937;
+  color: #fff;
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: center;
+}
+
 .result-info {
   flex: 1;
   min-width: 0;

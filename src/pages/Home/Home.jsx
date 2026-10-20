@@ -136,9 +136,7 @@ const Home = () => {
             <Link to="/shop?category=Batik Tulis" className="category-card">
               <div className="category-image">
                 <img src={parangImg} alt="Batik Tulis" />
-                <div className="category-overlay">
-                  <span className="category-badge">{t('home.premium')}</span>
-                </div>
+                <div className="category-overlay"></div>
               </div>
               <div className="category-info">
                 <h3>{t('home.batikTulis')}</h3>

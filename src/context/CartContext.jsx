@@ -168,7 +168,7 @@ export const CartProvider = ({ children }) => {
       const maxQuantity =
         variantStock !== null ? Math.max(0, variantStock) : getMaxQuantity(product);
 
-      // Varian yang dipilih sedang habis — jangan masukkan apa pun.
+      // Varian yang dipilih sedang habis - jangan masukkan apa pun.
       if (maxQuantity <= 0) {
         return prevItems;
       }

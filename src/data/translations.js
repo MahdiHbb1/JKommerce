@@ -313,7 +313,6 @@ export const translations = {
       batikPrinting: 'Batik Printing',
       batikPrintingDesc: 'Teknik cetak modern yang menghadirkan batik untuk gaya hidup kontemporer',
       viewCollection: 'Lihat Koleksi',
-      premium: 'Premium',
       parang: 'Parang',
       parangDesc: 'Simbol kekuatan dan kekuasaan, tradisional untuk kaum bangsawan',
       kawung: 'Kawung',
@@ -566,6 +565,8 @@ export const translations = {
       print: 'Cetak',
       refresh: 'Muat Ulang',
       search: 'Cari',
+      switchToEnglish: 'Ganti ke Bahasa Inggris',
+      switchToIndonesian: 'Ganti ke Bahasa Indonesia',
       retry: 'Coba lagi'
     },
 
@@ -927,7 +928,6 @@ export const translations = {
       batikPrinting: 'Batik Printing',
       batikPrintingDesc: 'Modern printed technique making batik accessible to contemporary lifestyle',
       viewCollection: 'View Collection',
-      premium: 'Premium',
       parang: 'Parang',
       parangDesc: 'Symbol of strength and power, traditionally for nobility',
       kawung: 'Kawung',
@@ -1167,6 +1167,8 @@ export const translations = {
       clear: 'Clear',
       back: 'Back',
       search: 'Search',
+      switchToEnglish: 'Switch to English',
+      switchToIndonesian: 'Switch to Indonesian',
       retry: 'Try again',
       next: 'Next',
       previous: 'Previous',

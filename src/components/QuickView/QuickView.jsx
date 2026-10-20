@@ -91,15 +91,18 @@ const QuickView = ({ product, onClose }) => {
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm animate-fade-in"
       onClick={handleBackdropClick}
     >
-      <div 
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quickview-title"
         className="relative w-full max-w-5xl bg-white rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
-          className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-md hover:bg-gray-100 transition-colors"
+          className="absolute top-4 right-4 z-10 w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-md hover:bg-gray-100 transition-colors"
           onClick={onClose}
-          aria-label="Close quick view"
+          aria-label={t('common.close')}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -165,7 +168,7 @@ const QuickView = ({ product, onClose }) => {
           <div className="space-y-6">
             {/* Header */}
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+              <h2 id="quickview-title" className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
                 {product.name}
               </h2>
               <div className="flex items-center gap-3 mb-3">
@@ -291,7 +294,7 @@ const QuickView = ({ product, onClose }) => {
             <div className="flex gap-3 pt-4">
               <Button
                 variant="primary"
-                size="large"
+                size="lg"
                 onClick={handleAddToCart}
                 disabled={product.stock === 0}
                 className="flex-1"

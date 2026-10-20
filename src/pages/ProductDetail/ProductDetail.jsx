@@ -434,7 +434,7 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Reviews — skema ulasan menyusul; belum ada data, jadi jangan tampilkan apa pun selain pesan netral */}
+        {/* Reviews - skema ulasan menyusul; belum ada data, jadi jangan tampilkan apa pun selain pesan netral */}
         <div className="reviews-section">
           <div className="reviews-header">
             <h2>{t('product.customerReviews')}</h2>

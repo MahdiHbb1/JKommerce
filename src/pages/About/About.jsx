@@ -34,7 +34,7 @@ const About = () => {
               <h3 className="about-tagline">Di Mana Tradisi Bertemu Keanggunan Modern</h3>
               <p>
                 Didirikan dengan penghormatan mendalam terhadap warisan budaya Indonesia, Janoer Koening
-                lebih dari sekadar merek batik—ini adalah gerakan untuk melestarikan dan merayakan salah satu
+                lebih dari sekadar merek batik. Ini adalah gerakan untuk melestarikan dan merayakan salah satu
                 seni tekstil paling menawan di dunia.
               </p>
               <p>
@@ -43,7 +43,7 @@ const About = () => {
                 tradisi berabad-abad sambil merangkul estetika kontemporer.
               </p>
               <p>
-                Setiap karya dalam koleksi kami menceritakan sebuah kisah—tentang pengrajin terampil yang mendedikasikan
+                Setiap karya dalam koleksi kami menceritakan sebuah kisah tentang pengrajin terampil yang mendedikasikan
                 berbulan-bulan untuk menyempurnakan satu kain, tentang pola kuno yang membawa makna
                 filosofis, dan tentang warisan budaya yang diakui oleh UNESCO sebagai Mahakarya
                 Warisan Lisan dan Takbenda Kemanusiaan.
@@ -61,7 +61,6 @@ const About = () => {
         <div className="container">
           <div className="mission-vision-grid">
             <div className="mission-card">
-              <div className="mission-icon">🎨</div>
               <h3>{t('about.mission')}</h3>
               <p>
                 Melestarikan dan mempromosikan keahlian batik Indonesia autentik dengan menghubungkan
@@ -70,11 +69,10 @@ const About = () => {
               </p>
             </div>
             <div className="mission-card">
-              <div className="mission-icon">✨</div>
               <h3>{t('about.vision')}</h3>
               <p>
                 Menjadi standar global untuk batik premium, di mana setiap karya mewakili
-                puncak kualitas, keaslian, dan signifikansi budaya—membuat warisan Indonesia
+                puncak kualitas, keaslian, dan signifikansi budaya, membuat warisan Indonesia
                 dapat diakses oleh dunia.
               </p>
             </div>
