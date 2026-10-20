@@ -244,48 +244,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="testimonials-section">
-        <div className="container">
-          <div className="section-header">
-            <h2>{t('home.testimonials')}</h2>
-            <p>{t('home.testimonialsSubtitle')}</p>
-          </div>
-          <div className="testimonials-grid">
-            <div className="testimonial-card">
-              <div className="testimonial-stars">★★★★★</div>
-              <p className="testimonial-text">
-                {t('home.testimonial1')}
-              </p>
-              <div className="testimonial-author">
-                <strong>Sarah Wijaya</strong>
-                <span>Jakarta</span>
-              </div>
-            </div>
-            <div className="testimonial-card">
-              <div className="testimonial-stars">★★★★★</div>
-              <p className="testimonial-text">
-                {t('home.testimonial2')}
-              </p>
-              <div className="testimonial-author">
-                <strong>Michael Hartono</strong>
-                <span>Surabaya</span>
-              </div>
-            </div>
-            <div className="testimonial-card">
-              <div className="testimonial-stars">★★★★★</div>
-              <p className="testimonial-text">
-                {t('home.testimonial3')}
-              </p>
-              <div className="testimonial-author">
-                <strong>Dewi Kusuma</strong>
-                <span>Bandung</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* QuickView Modal */}
       {quickViewProduct && (
         <QuickView product={quickViewProduct} onClose={closeQuickView} />
