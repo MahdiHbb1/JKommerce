@@ -2,7 +2,8 @@
 
 Tanggal: 20 Oktober 2026
 Branch: `stage-0-1`
-Commit terakhir saat dokumen ini ditulis: `f774ded`
+Commit terakhir saat dokumen ini diperbarui: `c1389c2`
+PR review: https://github.com/MahdiHbb1/JKommerce/pull/1 (terbuka, belum di-merge)
 Lingkungan uji lokal: Windows, Node 25 (produksi memakai Node 20 LTS), Vite 5,
 Supabase project `janoer-koening` (`qktvhhzniaearlpzbffv`).
 
@@ -15,7 +16,7 @@ Supabase project `janoer-koening` (`qktvhhzniaearlpzbffv`).
 | Browser UX katalog/pesanan | **PASS** |
 | Domain produksi, header keamanan live, `/.env` live | **BELUM BISA DIUJI** — hosting belum deploy |
 | Submit checkout ke Edge Function produksi | **BELUM BISA DIUJI** — function belum ter-deploy |
-| PR + preview deploy | **BELUM** — menunggu izin pemilik |
+| PR + preview deploy | **PR terbuka / preview BELUM** — PR #1 siap direview; Cloudflare Pages belum terhubung |
 
 Kesimpulan: Stage 0–1 **GO untuk review kode**, **NO-GO untuk go-live** sampai
 blokir pemilik di bagian akhir diselesaikan. Tidak ada klaim bahwa toko sudah
@@ -114,21 +115,33 @@ curl.exe -I https://<domain>/
 
 ### 9. `npm test` dan `npm run lint` hijau — PASS
 
-- Test: **11 file, 69 test PASS** (`npx vitest run --maxWorkers=1`).
+- Test: **69 test PASS**. Run penuh terakhir pada kode `c1389c2` sempat
+  menghasilkan 66/69 karena tiga file timeout 5 detik di lingkungan Node 25;
+  ketiganya lulus saat dijalankan ulang terpisah dengan `--testTimeout=20000`
+  (Checkout 5/5 + OrderHistory 3/3, ProductDetail 6/6). Tidak ada assertion
+  yang gagal. Run penuh sebelumnya pada kode yang sama secara fungsional:
+  69/69 PASS.
 - Lint: **0 error, 65 warning** (warning lama a11y/unused, bukan regresi).
 - Build: `npm run build` **OK**.
+- Browser terakhir: Home, Shop, Cart, cart drawer, footer, detail produk,
+  desktop 1360 px dan mobile 390 px; 0 console/page error, 0 overflow,
+  target ikon header 44 px, drawer bisa ditutup dengan Escape.
+- Hardening konten: tidak ada klaim gratis ongkir, PPN 11% hardcode, testimoni
+  karangan, label "Terlaris", kontak placeholder, atau tautan footer mati yang
+  tampil di storefront.
 
 Catatan lingkungan: Node 25 di mesin ini kadang gagal membuat worker Vitest
 (`Timeout waiting for worker to respond`); rerun dengan `--maxWorkers=1`
 memberi hasil stabil. CI/produksi memakai Node 20.
 
-### 10. Preview deploy PR berjalan — BLOCKED
+### 10. Preview deploy PR berjalan — SEBAGIAN
 
-Belum ada push/PR karena menunggu izin pemilik. Setelah izin:
+- PR #1 sudah terbuka: https://github.com/MahdiHbb1/JKommerce/pull/1
+  (review-only, belum di-merge).
+- Cloudflare Pages belum dihubungkan ke repo, jadi preview deployment belum ada.
 
-1. `git push -u origin stage-0-1`
-2. Buka PR ke `main`, lampirkan dokumen ini + evidence Task 13/14.
-3. Hubungkan Cloudflare Pages ke repo dan cek preview deployment.
+**Sisa aksi:** hubungkan Cloudflare Pages ke repo, set env produksi, lalu ulangi
+skenario 1, 7, 8, dan 10 di URL preview/domain asli.
 
 ## Bukti tambahan
 
@@ -157,7 +170,7 @@ Belum ada push/PR karena menunggu izin pemilik. Setelah izin:
 | Panel admin belum ada | Pemilik belum bisa kelola produk/pesanan tanpa SQL | Stage 3 |
 | Foto/deskripsi/harga/stok seed belum diverifikasi | Konten masih `needs_verification`; jangan dianggap final | Verifikasi pemilik |
 | Harga wishlist = snapshot saat ditambahkan | Harga bisa berbeda dari katalog terkini | Diterima untuk Stage 1 |
-| Nomor WhatsApp/akun sosial masih placeholder | Jangan tampilkan sebagai kontak resmi | Isi dari pemilik |
+| Nomor WhatsApp/akun sosial belum tersedia | Footer tidak menampilkan kontak placeholder; kanal resmi belum ada | Isi dari pemilik |
 | Sisa kode Xendit (`create-invoice`) | Tidak dipakai, tidak boleh di-deploy | Dihapus Plan 2 |
 | Testimoni karangan di Home | Sudah dihapus (`f774ded`), termasuk label “Terlaris” yang tidak berdasar data | Selesai (melampaui rencana awal Stage 4) |
 | Warning lint lama (65) | Tidak memblokir build; sebagian a11y | Stage 4/5 |
@@ -176,7 +189,8 @@ Belum ada push/PR karena menunggu izin pemilik. Setelah izin:
    env `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_WHATSAPP_NUMBER`).
 4. **Data legal & operasional**: nama badan usaha, NPWP/status PKP, alamat,
    kebijakan retur, rekening bank/QRIS, nomor WhatsApp asli, akun Duitku/Resend.
-5. **Izin push + PR** `stage-0-1 → main` dan review preview deployment.
+5. **Cloudflare Pages + preview deployment** untuk PR #1. PR sendiri sudah
+   terbuka dan menunggu review; jangan merge sebelum preview/checklist selesai.
 
 Sampai lima hal di atas selesai, status rilis tetap **belum live** dan tidak boleh
 diklaim menerima pesanan.
