@@ -16,7 +16,7 @@ Supabase project `janoer-koening` (`qktvhhzniaearlpzbffv`).
 | Browser UX katalog/pesanan | **PASS** |
 | Domain produksi, header keamanan live, `/.env` live | **BELUM BISA DIUJI** — hosting belum deploy |
 | Submit checkout ke Edge Function produksi | **BELUM BISA DIUJI** — function belum ter-deploy |
-| PR + preview deploy | **PR terbuka / preview BELUM** — PR #1 siap direview; Cloudflare Pages belum terhubung |
+| PR + preview deploy | **PR terbuka / preview terkunci** — PR #1 siap direview; preview Vercel terlindungi login, Cloudflare Pages belum terhubung |
 
 Kesimpulan: Stage 0–1 **GO untuk review kode**, **NO-GO untuk go-live** sampai
 blokir pemilik di bagian akhir diselesaikan. Tidak ada klaim bahwa toko sudah
@@ -144,10 +144,14 @@ memberi hasil stabil. CI/produksi memakai Node 20.
 
 - PR #1 sudah terbuka: https://github.com/MahdiHbb1/JKommerce/pull/1
   (review-only, belum di-merge).
-- Cloudflare Pages belum dihubungkan ke repo, jadi preview deployment belum ada.
+- Vercel sudah membuat preview deployment untuk commit `de1c1ea`, tetapi URL
+  preview terlindungi Vercel Authentication (dialihkan ke halaman login), jadi
+  belum bisa dipakai untuk review publik. Ini bukan Cloudflare Pages.
+- Cloudflare Pages belum dihubungkan ke repo, jadi preview publik belum ada.
 
 **Sisa aksi:** hubungkan Cloudflare Pages ke repo, set env produksi, lalu ulangi
-skenario 1, 7, 8, dan 10 di URL preview/domain asli.
+skenario 1, 7, 8, dan 10 di URL preview/domain asli. Untuk sementara, review
+dilakukan di server lokal `http://127.0.0.1:5173`.
 
 ## Bukti tambahan
 
