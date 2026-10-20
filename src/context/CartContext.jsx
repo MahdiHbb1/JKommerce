@@ -196,6 +196,8 @@ export const CartProvider = ({ children }) => {
         // Add new item
         return [...prevItems, {
           ...product,
+          price: Number(product.price ?? product.price_idr ?? 0),
+          image: product.image ?? product.images?.[0] ?? '',
           quantity: nextQuantity,
           selectedSize: effectiveSize || resolvedVariant?.size || (product.sizes ? product.sizes[0] : null),
           selectedColor: effectiveColor || resolvedVariant?.color || (product.colors ? product.colors[0] : null),

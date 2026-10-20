@@ -1,6 +1,4 @@
 import { createContext, useState, useContext, useEffect } from 'react';
-import { supabase, isSupabaseConfigured, SUPABASE_ORDERS_TABLE } from '../lib/supabaseClient';
-import { useAuth } from './AuthContext';
 
 const OrderContext = createContext();
 
@@ -19,22 +17,6 @@ const safeParseOrders = (rawValue) => {
   }
 };
 
-const normalizeOrder = (orderRecord) => {
-  const payload = orderRecord?.payload && typeof orderRecord.payload === 'object'
-    ? orderRecord.payload
-    : orderRecord;
-
-  const orderNumber = payload.orderNumber || orderRecord?.order_number || payload.id || orderRecord?.id;
-
-  return {
-    ...payload,
-    id: payload.id || orderRecord?.id || orderNumber,
-    orderNumber,
-    orderDate: payload.orderDate || orderRecord?.created_at || Date.now(),
-    status: payload.status || orderRecord?.status || 'processing'
-  };
-};
-
 const mergeOrders = (primaryOrders, secondaryOrders) => {
   const orderMap = new Map();
 
@@ -46,7 +28,7 @@ const mergeOrders = (primaryOrders, secondaryOrders) => {
 
     orderMap.set(key, {
       ...(orderMap.get(key) || {}),
-      ...order
+      ...order,
     });
   });
 
@@ -57,19 +39,6 @@ const mergeOrders = (primaryOrders, secondaryOrders) => {
   });
 };
 
-const toSupabaseRow = (orderData, userId = null) => ({
-  order_number: orderData.orderNumber,
-  email: orderData.shippingInfo?.email || '',
-  status: orderData.status || 'processing',
-  user_id: userId,
-  payload: {
-    ...orderData,
-    id: orderData.id || orderData.orderNumber,
-    orderNumber: orderData.orderNumber,
-    orderDate: orderData.orderDate || Date.now()
-  }
-});
-
 export const useOrders = () => {
   const context = useContext(OrderContext);
   if (!context) {
@@ -79,7 +48,6 @@ export const useOrders = () => {
 };
 
 export const OrderProvider = ({ children }) => {
-  const { user } = useAuth();
   const [orders, setOrders] = useState(() => {
     const savedOrders = safeParseOrders(localStorage.getItem(LOCAL_STORAGE_KEY));
     if (Array.isArray(savedOrders)) {
@@ -88,69 +56,91 @@ export const OrderProvider = ({ children }) => {
     return [];
   });
 
-  // Save orders to localStorage whenever they change.
+  // Cache lokal hanya untuk tampilan; sumber kebenaran pesanan adalah DB.
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(orders));
   }, [orders]);
 
-  // Add new order
-  const addOrder = async (orderData) => {
-    const newOrder = {
-      ...orderData,
-      id: orderData.orderNumber || `JK${Date.now().toString().slice(-8)}`,
+  /**
+   * Membuat pesanan lewat Edge Function create-order (server yang memvalidasi
+   * harga, stok, dan total). Tidak pernah menulis langsung ke tabel orders.
+   */
+  const createOrder = async (orderInput) => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !anonKey) {
+      const configError = new Error('supabase_not_configured');
+      configError.code = 'supabase_not_configured';
+      throw configError;
+    }
+
+    let response;
+    try {
+      response = await fetch(`${supabaseUrl}/functions/v1/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify(orderInput),
+      });
+    } catch {
+      const error = new Error('network_error');
+      error.code = 'network_error';
+      throw error;
+    }
+
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      // Respons non-JSON ditangani sebagai kegagalan generik di bawah.
+      data = null;
+    }
+
+    if (!response.ok) {
+      const error = new Error(data?.error || 'create_order_failed');
+      error.code = data?.error || 'create_order_failed';
+      error.status = response.status;
+      error.details = data?.errors;
+      throw error;
+    }
+
+    if (!data?.order_number) {
+      const error = new Error('invalid_response');
+      error.code = 'invalid_response';
+      throw error;
+    }
+
+    const cachedOrder = {
+      id: data.order_number,
+      orderNumber: data.order_number,
+      status: data.status || 'pending_payment',
+      totals: data.totals || null,
+      expiresAt: data.expires_at || null,
+      email: orderInput?.customer?.email || '',
+      customerName: orderInput?.customer?.name || '',
       orderDate: Date.now(),
-      status: 'processing'
     };
 
-    setOrders((prevOrders) => mergeOrders([newOrder], prevOrders));
+    setOrders((prevOrders) => mergeOrders([cachedOrder], prevOrders));
 
-    if (!isSupabaseConfigured || !supabase) {
-      return newOrder;
-    }
-
-    try {
-      // For guest orders (user_id is null), skip read-back to avoid RLS policy failure.
-      // The SELECT policy requires auth.uid() = user_id, but NULL = NULL is not true in SQL.
-      // Local state already has the correct order data. Guest orders can be retrieved via
-      // the secure Edge Function lookup-order when needed.
-      if (!user) {
-        await supabase
-          .from(SUPABASE_ORDERS_TABLE)
-          .upsert(toSupabaseRow(newOrder, null), { onConflict: 'order_number' });
-      } else {
-        // For authenticated users, read-back is safe and useful for consistency
-        const { data, error } = await supabase
-          .from(SUPABASE_ORDERS_TABLE)
-          .upsert(toSupabaseRow(newOrder, user.id), { onConflict: 'order_number' })
-          .select('*')
-          .single();
-
-        if (error) {
-          throw error;
-        }
-
-        if (data) {
-          const remoteOrder = normalizeOrder(data);
-          setOrders((prevOrders) => mergeOrders([remoteOrder], prevOrders));
-        }
-      }
-    } catch (error) {
-      console.error('Error saving order to Supabase:', error);
-    }
-
-    return newOrder;
+    return data;
   };
 
-  // Get order by ID
   const getOrderById = (orderId) => {
-    return orders.find(order => order.id === orderId || order.orderNumber === orderId);
+    return orders.find(
+      (order) => order.id === orderId || order.orderNumber === orderId,
+    );
   };
 
   const value = {
     orders,
-    addOrder,
+    createOrder,
     getOrderById,
-    orderCount: orders.length
+    orderCount: orders.length,
   };
 
   return (

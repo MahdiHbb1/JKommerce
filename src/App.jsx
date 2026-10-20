@@ -8,7 +8,7 @@ const Shop = lazy(() => import('./pages/Shop/Shop'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail/ProductDetail'));
 const Cart = lazy(() => import('./pages/Cart/Cart'));
 const Checkout = lazy(() => import('./pages/Checkout/Checkout'));
-const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess/CheckoutSuccess'));
+const OrderReceived = lazy(() => import('./pages/OrderReceived/OrderReceived'));
 const CheckoutFailed = lazy(() => import('./pages/CheckoutFailed/CheckoutFailed'));
 const About = lazy(() => import('./pages/About/About'));
 const Wishlist = lazy(() => import('./pages/Wishlist/Wishlist'));
@@ -27,7 +27,7 @@ function App() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
-          <Route path="/checkout/success" element={<CheckoutSuccess />} />
+          <Route path="/order-received" element={<OrderReceived />} />
           <Route path="/checkout/failed" element={<CheckoutFailed />} />
           <Route path="/about" element={<About />} />
           <Route path="/wishlist" element={<Wishlist />} />
