@@ -1,306 +1,152 @@
-# Janoer Koening Batik E-Commerce
+# Janoer Koening Batik
 
-A modern, full-featured e-commerce platform for authentic Indonesian batik products built with React, Vite, and Tailwind CSS.
+Toko batik premium Janoer Koening. Frontend React + Vite, data katalog dan
+pesanan di Supabase, deploy statis di Cloudflare Pages.
 
-![Batik E-Commerce](https://img.shields.io/badge/React-18.3.1-blue) ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4.0-06B6D4) ![Vite](https://img.shields.io/badge/Vite-5.4.2-646CFF)
+Status: **Stage 0–1 (fondasi, katalog, checkout, pelacakan pesanan)**. Situs
+belum live; deployment dan data operasional masih menunggu aksi pemilik. Lihat
+[`docs/runbook/stage-0-1-acceptance.md`](docs/runbook/stage-0-1-acceptance.md).
 
-## 🌟 Features
+## Fitur
 
-### Core E-Commerce Functionality
-- **Product Catalog**: Browse authentic batik products with detailed information
-- **Advanced Filtering**: Filter by categories, patterns, and price range
-- **Smart Search**: Search products by name, category, pattern, or description
-- **Sorting Options**: Sort by featured, newest, price, or name
-- **Pagination**: Customizable items per page (8/16/24/32)
-- **Shopping Cart**: Add, remove, update quantities with size/color variants
-- **Wishlist**: Save favorite products for later
-- **Order Management**: Complete checkout process with order tracking
+- Katalog dari database: pencarian, filter kategori/motif/harga, urutan, dan
+  paginasi.
+- Detail produk dengan varian ukuran/warna dan stok per varian.
+- Keranjang dan wishlist per perangkat; pesanan tamu bisa dilacak dengan nomor
+  pesanan + email.
+- Checkout dua langkah: informasi/pengiriman → konfirmasi. Ongkir hanya dari
+  zona aktif di `shipping_zones`; checkout diblokir bila zona belum diisi.
+- Pesanan diproses server-side oleh Edge Function `create-order`: harga, stok,
+  pajak, dan ongkir dihitung ulang di server; idempotency mencegah pesanan ganda.
+- Riwayat pesanan akun dan pembatalan mandiri sebelum bayar (stok dikembalikan).
+- UI bilingual Indonesia/Inggris, fokus keyboard terlihat, dukungan
+  `prefers-reduced-motion`.
 
-### Advanced Features
-- **Quick View Modal**: Preview products without leaving the page
-- **Recently Viewed**: Track last 8 viewed products
-- **Toast Notifications**: Real-time feedback for user actions
-- **Skeleton Loaders**: Smooth loading states for better UX
-- **Product Reviews**: Customer reviews and ratings system
-- **Related Products**: Smart product recommendations
-- **Responsive Design**: Mobile-first, fully responsive layout
+Belum termasuk di Stage 0–1: pembayaran Duitku/webhook, upload bukti transfer,
+email transaksional, halaman legal, panel admin, dan pencatatan bukti consent.
+Itu masuk Plan 2–4. **Tidak ada klaim pembayaran otomatis sebelum Plan 2.**
 
-### User Experience
-- **Newsletter Subscription**: Email signup for updates
-- **Social Media Integration**: Share products on social platforms
-- **Contact Forms**: Customer support and inquiries
-- **About Page**: Brand story and heritage information
-- **Product Gallery**: Multiple image views with thumbnails
-- **Size & Color Selection**: Product variant options
+## Stack
 
-## 🚀 Tech Stack
+- React 18.3 + Vite 5 + React Router 6
+- Tailwind CSS 3.4
+- Supabase: Postgres, Auth, Storage, Edge Functions (Deno)
+- Vitest + Testing Library
+- Cloudflare Pages untuk hosting statis
 
-- **Frontend Framework**: React 18.3.1
-- **Build Tool**: Vite 5.4.2
-- **Styling**: Tailwind CSS 3.4.0
-- **Routing**: React Router DOM 6.28.0
-- **State Management**: React Context API
-- **Storage**: localStorage for cart, wishlist, and preferences
-- **Icons**: Heroicons (SVG)
-- **Form Validation**: PropTypes
+## Menjalankan lokal
 
-## 📦 Installation
-
-### Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn
-
-### Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/MahdiHbb1/JKommerce.git
-   cd JKommerce/batik-ecommerce
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open in browser**
-   ```
-   http://localhost:5173
-   ```
-
-## 🔐 Environment Setup
-
-For full functionality including order persistence and payment processing, you need to configure environment variables:
-
-1. **Copy the example environment file**
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Configure Supabase** (Required for order persistence)
-   - Create a Supabase project at [supabase.com](https://supabase.com)
-   - Run the migration files in `supabase/migrations/` to set up the orders table
-   - Add your Supabase URL and anon key to `.env`
-   - **IMPORTANT**: Service role key for Edge Functions must NOT be added to `.env` or Vercel environment variables. Set it via Supabase CLI:
-     ```bash
-     supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-     ```
-   - Deploy the Edge Function in `supabase/functions/lookup-order/` for secure order lookup
-
-3. **Configure Xendit** (Required for payment processing)
-   - Create a Xendit account at [xendit.co](https://xendit.co)
-   - Generate Secret Key from API Keys page (click "Buat secret key baru")
-   - Set Xendit secrets via Supabase CLI:
-     ```bash
-     supabase secrets set XENDIT_SECRET_KEY=your-test-secret-key
-     supabase secrets set XENDIT_CALLBACK_TOKEN=your-verification-token
-     ```
-   - Deploy Edge Functions:
-     ```bash
-     supabase functions deploy create-invoice
-     supabase functions deploy xendit-webhook
-     ```
-   - Set webhook URL in Xendit dashboard to: `https://<project-ref>.supabase.co/functions/v1/xendit-webhook`
-   - Add Xendit redirect URLs to `.env` (VITE_XENDIT_SUCCESS_REDIRECT_URL, VITE_XENDIT_FAILURE_REDIRECT_URL)
-
-4. **Optional configurations**
-   - Shipping quote endpoint for real-time shipping costs
-   - WhatsApp number for WhatsApp fallback checkout
-   - Plausible analytics for website analytics
-
-**Note**: The application will work in development mode without these configurations, but checkout and order persistence features will be limited.
-
-## 🏗️ Project Structure
-
-```
-batik-ecommerce/
-├── src/
-│   ├── assets/
-│   │   └── images/          # Product and UI images
-│   ├── components/
-│   │   ├── Button/          # Reusable button components
-│   │   ├── Layout/          # Header, Footer, Layout
-│   │   ├── ProductCard/     # Product display card
-│   │   ├── ProductGrid/     # Product grid layout
-│   │   ├── ProductFilter/   # Advanced filtering sidebar
-│   │   ├── QuickView/       # Quick view modal
-│   │   ├── Toast/           # Toast notification system
-│   │   ├── Skeleton/        # Loading skeleton components
-│   │   ├── Pagination/      # Pagination controls
-│   │   └── ui/              # UI component library
-│   ├── context/
-│   │   ├── CartContext.jsx           # Shopping cart state
-│   │   ├── WishlistContext.jsx       # Wishlist state
-│   │   ├── OrderContext.jsx          # Order management
-│   │   ├── ToastContext.jsx          # Toast notifications
-│   │   └── RecentlyViewedContext.jsx # Recently viewed tracking
-│   ├── pages/
-│   │   ├── Home/            # Landing page
-│   │   ├── Shop/            # Product catalog
-│   │   ├── ProductDetail/   # Individual product page
-│   │   ├── Cart/            # Shopping cart page
-│   │   ├── Checkout/        # Checkout process
-│   │   └── About/           # About page
-│   ├── data/
-│   │   └── products.js      # Product data and utilities
-│   ├── App.jsx              # Main app component
-│   └── main.jsx             # App entry point
-├── public/                  # Static assets
-├── index.html              # HTML template
-├── package.json            # Dependencies
-├── vite.config.js          # Vite configuration
-├── tailwind.config.js      # Tailwind configuration
-└── postcss.config.js       # PostCSS configuration
-```
-
-## 🎨 Key Components
-
-### Product Filter
-Advanced filtering system with:
-- Category checkboxes
-- Pattern selection
-- Price range inputs
-- Active filter counts
-- Clear filters button
-
-### Toast Notifications
-Real-time user feedback:
-- Success messages (green)
-- Error alerts (red)
-- Info messages (blue)
-- Warning notifications (yellow)
-- Auto-dismiss with configurable duration
-
-### Pagination
-Smart pagination with:
-- Page number buttons
-- Ellipsis for large page counts
-- Previous/Next navigation
-- Items per page selector
-- Results count display
-
-### Recently Viewed
-Automatic product tracking:
-- Last 8 viewed products
-- localStorage persistence
-- Excludes current product
-- Quick navigation
-
-## 🛒 E-Commerce Features
-
-### Shopping Cart
-- Add products with variants (size, color)
-- Update quantities
-- Remove items
-- Calculate subtotal, tax, shipping
-- localStorage persistence
-- Cart count badge
-
-### Wishlist
-- Save favorite products
-- Toggle wishlist items
-- Persistent across sessions
-- Quick access from header
-
-### Checkout Process
-1. Cart review
-2. Customer information
-3. Shipping details
-4. Payment method
-5. Order confirmation
-
-## 🎯 Available Scripts
+Prasyarat: **Node.js 20 LTS** dan npm (paket dikunci dengan
+`package-lock.json`).
 
 ```bash
-# Development server
+npm install
+cp .env.example .env
 npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Lint code
-npm run lint
 ```
 
-## 🌈 Color Palette
+Buka `http://localhost:5173`. Tanpa Supabase, halaman katalog menampilkan
+status kosong; checkout tidak bisa mengirim pesanan.
 
-The project uses a custom batik-inspired color scheme:
+## Environment
 
-- **Orange**: `#D2691E` (Primary brand color)
-- **Brown**: `#8B4513` (Secondary)
-- **Blue**: `#4682B4` (Accent)
-- **Cream**: `#F5F5DC` (Background)
+Frontend (boleh masuk bundle browser, jangan isi secret):
 
-## 📱 Responsive Design
+| Variabel | Wajib | Keterangan |
+|---|---|---|
+| `VITE_SUPABASE_URL` | ya | `https://<project-ref>.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | ya | anon public key Supabase |
+| `VITE_WHATSAPP_NUMBER` | tidak | nomor asli format `62...`; kosongkan bila belum ada |
 
-The application is fully responsive with breakpoints:
-- **Mobile**: < 640px
-- **Tablet**: 640px - 1024px
-- **Desktop**: > 1024px
+Script lokal dan Edge Function (jangan commit nilainya):
 
-## 🔧 Configuration
+| Variabel | Dipakai untuk |
+|---|---|
+| `SUPABASE_DB_URL` | Session pooler URL untuk `supabase db push` dan verifikasi DB |
+| `SUPABASE_ACCESS_TOKEN` | Management API untuk seed/verifikasi (token scoped) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | server-side saja; di Supabase hosted sudah tersedia otomatis |
+| `ALLOWED_ORIGINS` | daftar origin frontend dipisah koma untuk CORS Edge Function |
 
-### Tailwind CSS
-Custom configuration in `tailwind.config.js`:
-- Custom color palette
-- Extended spacing
-- Custom animations
-- Custom fonts
-
-### Vite
-Fast build tool with:
-- Hot Module Replacement (HMR)
-- Optimized builds
-- React Fast Refresh
-- ESBuild for speed
-
-## 🚀 Deployment
-
-### Build for Production
+Di Supabase, set origin produksi setelah domain ada:
 
 ```bash
+supabase secrets set ALLOWED_ORIGINS=https://domain-utama,https://www.domain-utama
+```
+
+`localhost:5173` selalu diizinkan untuk pengembangan. Wildcard `*` diabaikan.
+
+## Database dan seed
+
+Semua perubahan skema lewat `supabase/migrations/`; jangan edit dashboard.
+
+```bash
+# dorong migrasi (butuh SUPABASE_DB_URL)
+supabase db push --db-url "$SUPABASE_DB_URL"
+
+# isi katalog awal; idempoten, tidak menimpa produk/gambar/stok yang sudah ada
+node scripts/seed-products.mjs
+
+# cek skema, RLS, RPC, stok, idempotency, pembatalan
+node scripts/verify-db.mjs
+```
+
+Seed menandai konten `needs_verification=true`. Ganti foto, deskripsi, harga,
+dan stok hanya setelah pemilik memverifikasi.
+
+## Test dan build
+
+```bash
+npm test
+npm run lint
 npm run build
 ```
 
-The optimized production build will be in the `dist/` folder.
+E2E Edge Function lokal tidak memerlukan Docker. Jalankan dua function dengan
+Deno, lalu arahkan skrip E2E ke keduanya:
 
-### Deploy Options
+```bash
+# terminal 1 — create-order
+E2E_PORT=8787 \
+E2E_FUNCTION_ENTRY="file:///$PWD/supabase/functions/create-order/index.ts" \
+npx --yes deno-bin run --env-file=.env --allow-net --allow-env --allow-read \
+  scripts/e2e/serve-function.ts
 
-- **Vercel**: Connect GitHub repo for automatic deployments
-- **Netlify**: Drag and drop `dist` folder
-- **GitHub Pages**: Use `gh-pages` branch
-- **Custom Server**: Upload `dist` folder contents
+# terminal 2 — lookup-order
+E2E_PORT=8788 \
+E2E_FUNCTION_ENTRY="file:///$PWD/supabase/functions/lookup-order/index.ts" \
+npx --yes deno-bin run --env-file=.env --allow-net --allow-env --allow-read \
+  scripts/e2e/serve-function.ts
 
-## 📄 License
+# terminal 3
+E2E_CREATE_ORDER_URL=http://127.0.0.1:8787 \
+E2E_LOOKUP_ORDER_URL=http://127.0.0.1:8788 \
+node scripts/e2e/create-order.mjs
+```
 
-This project is created for Janoer Koening Batik.
+Di PowerShell, set variabel dengan `$env:E2E_PORT="8787"` dan seterusnya.
 
-## 👥 Author
+## Deploy
 
-**Mahdi Hbb**
-- GitHub: [@MahdiHbb1](https://github.com/MahdiHbb1)
+Hosting v1: **Cloudflare Pages**, root direktori `batik-ecommerce/`, build
+`npm run build`, output `dist/`, `NODE_VERSION=20`. Header keamanan dan SPA
+fallback ada di `public/_headers` dan `public/_redirects`.
 
-## 🙏 Acknowledgments
+```bash
+# deploy Edge Functions (butuh PAT dengan izin Edge Functions read/write)
+supabase functions deploy create-order lookup-order \
+  --project-ref qktvhhzniaearlpzbffv
+```
 
-- Indonesian batik heritage and craftsmanship
-- React and Vite communities
-- Tailwind CSS team
-- Open source contributors
+Langkah domain dan Pages: [`docs/runbook/01-hosting-domain.md`](docs/runbook/01-hosting-domain.md).
 
-## 📞 Support
+## Dokumentasi
 
-For support and inquiries:
-- Email: contact@janoerkoening.com
-- Website: [Janoer Koening Batik](#)
+- [`docs/runbook/00-supabase-setup.md`](docs/runbook/00-supabase-setup.md) — setup Supabase.
+- [`docs/runbook/01-hosting-domain.md`](docs/runbook/01-hosting-domain.md) — domain dan Cloudflare Pages.
+- [`docs/superpowers/specs/2026-10-19-jkommerce-upgrade-design.md`](docs/superpowers/specs/2026-10-19-jkommerce-upgrade-design.md) — keputusan produk/teknis.
+- [`DESIGN.md`](DESIGN.md) — arah visual.
+- [`docs/runbook/stage-0-1-acceptance.md`](docs/runbook/stage-0-1-acceptance.md) — status acceptance dan blocker.
 
----
+## Lisensi
 
-Built with ❤️ for authentic Indonesian batik culture
+Dibuat untuk Janoer Koening Batik.

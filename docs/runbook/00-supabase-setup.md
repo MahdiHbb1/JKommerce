@@ -168,3 +168,40 @@ Setelah migrasi diterapkan:
 - Nanti untuk produksi: buat project terpisah (staging vs produksi) bila
   kuota free tier mencukupi; jangan pakai project yang sama untuk eksperimen
   berbahaya.
+
+## 8. Status hasil setup (20 Oktober 2026)
+
+Project `janoer-koening` (`qktvhhzniaearlpzbffv`) sudah terhubung dan dimigrasi.
+Hasil verifikasi terakhir:
+
+```text
+node scripts/verify-db.mjs  -> 27 PASS, DB OK
+node scripts/seed-products.mjs -> 14 produk, seed idempoten
+E2E create-order lokal -> 27/27 PASS
+```
+
+Migrasi yang terpasang: `core`, `catalog`, `stock_and_orders`, `cron`, dan
+`harden_function_grants`. Detail acceptance, bukti, dan sisa blocker ada di
+[`stage-0-1-acceptance.md`](stage-0-1-acceptance.md).
+
+## 9. Deploy Edge Functions (belum selesai)
+
+Edge Function **belum ter-deploy**. Percobaan deploy dengan token yang ada
+gagal:
+
+```text
+403 Missing required permission(s): edge_functions_read
+```
+
+Token scoped saat ini hanya punya izin **API Key Secrets Read**. Untuk deploy,
+pemilik perlu membuat PAT baru dengan izin **Edge Functions read/write**, lalu:
+
+```powershell
+npx supabase functions deploy create-order lookup-order --project-ref qktvhhzniaearlpzbffv
+npx supabase secrets set ALLOWED_ORIGINS=https://domain-utama,https://www.domain-utama --project-ref qktvhhzniaearlpzbffv
+```
+
+`ALLOWED_ORIGINS` wajib berisi origin produksi (tanpa slash di belakang).
+`localhost:5173` selalu diizinkan; wildcard `*` diabaikan. Setelah deploy,
+jalankan ulang E2E ke URL function produksi dan lanjutkan skenario 1–10 di
+dokumen acceptance.
