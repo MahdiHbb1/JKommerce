@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Checkbox } from '../ui/Input';
-import Button from '../ui/Button';
+import { useTranslation } from '../../hooks/useTranslation';
 
 /**
  * ProductFilter Component
@@ -14,6 +14,7 @@ import Button from '../ui/Button';
  */
 
 const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }) => {
+  const { t } = useTranslation();
   const [expandedSections, setExpandedSections] = useState({
     categories: true,
     patterns: true,
@@ -48,7 +49,7 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
       ...filters,
       priceRange: {
         ...filters.priceRange,
-        [type]: parseInt(value, 10),
+        [type]: value === '' ? null : Number.parseInt(value, 10),
       },
     });
   };
@@ -93,17 +94,26 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
 
   const hasActiveFilters = filters.categories.length > 0 || filters.patterns.length > 0;
 
+  const minPrice = filters.priceRange.min;
+  const maxPrice = filters.priceRange.max;
+  const priceRangeLabel =
+    minPrice == null && maxPrice == null
+      ? t('filter.allPrices')
+      : `${minPrice == null ? t('filter.noLimit') : formatPrice(minPrice)} - ${
+          maxPrice == null ? t('filter.noLimit') : formatPrice(maxPrice)
+        }`;
+
   return (
     <div className="card p-6 sticky top-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold text-neutral-900">Filters</h3>
+        <h3 className="text-lg font-bold text-neutral-900">{t('filter.filters')}</h3>
         {hasActiveFilters && (
           <button
             onClick={onClearFilters}
             className="text-sm text-primary-600 hover:text-primary-700 font-medium"
           >
-            Clear all
+            {t('filter.clearAll')}
           </button>
         )}
       </div>
@@ -116,7 +126,7 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
             className="flex items-center justify-between w-full text-left group"
           >
             <span className="text-sm font-semibold text-neutral-900 group-hover:text-primary-600 transition-colors">
-              Categories
+              {t('filter.category')}
             </span>
             <ChevronIcon isOpen={expandedSections.categories} />
           </button>
@@ -148,7 +158,7 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
             className="flex items-center justify-between w-full text-left group"
           >
             <span className="text-sm font-semibold text-neutral-900 group-hover:text-primary-600 transition-colors">
-              Patterns
+              {t('filter.pattern')}
             </span>
             <ChevronIcon isOpen={expandedSections.patterns} />
           </button>
@@ -180,7 +190,7 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
             className="flex items-center justify-between w-full text-left group mb-4"
           >
             <span className="text-sm font-semibold text-neutral-900 group-hover:text-primary-600 transition-colors">
-              Price Range
+              {t('filter.priceRange')}
             </span>
             <ChevronIcon isOpen={expandedSections.priceRange} />
           </button>
@@ -190,7 +200,7 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
               {/* Min Price */}
               <div>
                 <label htmlFor="filter-price-min" className="block text-xs font-medium text-neutral-700 mb-2">
-                  Min Price
+                  {t('filter.minPrice')}
                 </label>
                 <input
                   type="number"
@@ -198,19 +208,19 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
                   name="price-min"
                   min="0"
                   step="100000"
-                  value={filters.priceRange.min}
+                  value={filters.priceRange.min ?? ''}
                   onChange={(e) => handlePriceChange('min', e.target.value)}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   placeholder="Rp 0"
                   autoComplete="off"
-                  aria-label="Minimum price filter"
+                  aria-label={t('filter.minPrice')}
                 />
               </div>
 
               {/* Max Price */}
               <div>
                 <label htmlFor="filter-price-max" className="block text-xs font-medium text-neutral-700 mb-2">
-                  Max Price
+                  {t('filter.maxPrice')}
                 </label>
                 <input
                   type="number"
@@ -218,29 +228,22 @@ const ProductFilter = ({ filters, onFilterChange, onClearFilters, productStats }
                   name="price-max"
                   min="0"
                   step="100000"
-                  value={filters.priceRange.max}
+                  value={filters.priceRange.max ?? ''}
                   onChange={(e) => handlePriceChange('max', e.target.value)}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   placeholder="Rp 10,000,000"
                   autoComplete="off"
-                  aria-label="Maximum price filter"
+                  aria-label={t('filter.maxPrice')}
                 />
               </div>
 
               {/* Price Range Display */}
               <div className="pt-2 text-center">
-                <span className="text-sm text-neutral-600">
-                  {formatPrice(filters.priceRange.min)} - {formatPrice(filters.priceRange.max)}
-                </span>
+                <span className="text-sm text-neutral-600">{priceRangeLabel}</span>
               </div>
             </div>
           )}
         </div>
-
-        {/* Apply Button */}
-        <Button variant="primary" size="md" fullWidth>
-          Apply Filters
-        </Button>
       </div>
     </div>
   );
@@ -251,8 +254,8 @@ ProductFilter.propTypes = {
     categories: PropTypes.arrayOf(PropTypes.string).isRequired,
     patterns: PropTypes.arrayOf(PropTypes.string).isRequired,
     priceRange: PropTypes.shape({
-      min: PropTypes.number.isRequired,
-      max: PropTypes.number.isRequired,
+      min: PropTypes.number,
+      max: PropTypes.number,
     }).isRequired,
   }).isRequired,
   onFilterChange: PropTypes.func.isRequired,

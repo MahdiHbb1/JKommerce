@@ -239,7 +239,7 @@ export const Checkbox = ({
 };
 
 Checkbox.propTypes = {
-  label: PropTypes.string,
+  label: PropTypes.node,
   name: PropTypes.string.isRequired,
   checked: PropTypes.bool,
   onChange: PropTypes.func.isRequired,

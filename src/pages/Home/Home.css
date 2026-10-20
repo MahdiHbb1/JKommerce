@@ -114,6 +114,18 @@
   text-decoration: none;
 }
 
+.hero-actions .btn-outline {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.85);
+  background: rgba(17, 24, 39, 0.2);
+}
+
+.hero-actions .btn-outline:hover {
+  color: var(--primary-navy);
+  background: #fff;
+  border-color: #fff;
+}
+
 /* Category Showcase */
 .category-showcase {
   padding: 5rem 0;

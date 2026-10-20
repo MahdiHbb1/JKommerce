@@ -83,6 +83,9 @@ const QuickView = ({ product, onClose }) => {
 
   if (!product) return null;
 
+  const productImages = product.images || [];
+  const currentImage = productImages[selectedImage];
+
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm animate-fade-in"
@@ -108,11 +111,20 @@ const QuickView = ({ product, onClose }) => {
           <div className="space-y-4">
             {/* Main Image */}
             <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
-              <img 
-                src={product.images[selectedImage]} 
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
+              {currentImage ? (
+                <img
+                  src={currentImage}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-primary-700 px-6 text-center text-white">
+                  <div>
+                    <p className="font-medium">{product.name}</p>
+                    <p className="text-sm text-white/70 mt-1">{t('product.noImage')}</p>
+                  </div>
+                </div>
+              )}
               {product.featured && (
                 <span className="absolute top-3 left-3 px-3 py-1 bg-batik-orange text-white text-xs font-semibold rounded-full">
                   {t('product.featured')}
@@ -126,9 +138,9 @@ const QuickView = ({ product, onClose }) => {
             </div>
             
             {/* Thumbnails */}
-            {product.images.length > 1 && (
+            {productImages.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
-                {product.images.map((image, index) => (
+                {productImages.map((image, index) => (
                   <button
                     key={index}
                     className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${

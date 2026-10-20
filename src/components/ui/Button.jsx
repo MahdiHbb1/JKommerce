@@ -34,6 +34,7 @@ const Button = ({
   const variantClasses = {
     primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm hover:shadow-md',
     secondary: 'border-2 border-primary-600 text-primary-600 bg-white hover:bg-primary-600 hover:text-white focus:ring-primary-500',
+    outline: 'border-2 border-primary-600 text-primary-600 bg-white hover:bg-primary-600 hover:text-white focus:ring-primary-500',
     accent: 'bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-400 shadow-sm hover:shadow-md',
     ghost: 'text-primary-600 hover:bg-primary-50 focus:ring-primary-500',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm hover:shadow-md',
@@ -101,7 +102,7 @@ const Button = ({
 
 Button.propTypes = {
   children: PropTypes.node,
-  variant: PropTypes.oneOf(['primary', 'secondary', 'accent', 'ghost', 'danger', 'icon']),
+  variant: PropTypes.oneOf(['primary', 'secondary', 'outline', 'accent', 'ghost', 'danger', 'icon']),
   size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl']),
   disabled: PropTypes.bool,
   loading: PropTypes.bool,

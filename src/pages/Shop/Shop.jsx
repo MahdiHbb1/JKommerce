@@ -360,8 +360,8 @@ const Shop = () => {
                 >
                   <option value="featured">{t('sort.featured')}</option>
                   <option value="newest">{t('sort.newest')}</option>
-                  <option value="price-asc">{t('sort.priceLowToHigh')}</option>
-                  <option value="price-desc">{t('sort.priceHighToLow')}</option>
+                  <option value="price-asc">{t('sort.priceLowHigh')}</option>
+                  <option value="price-desc">{t('sort.priceHighLow')}</option>
                   <option value="name-asc">{t('sort.nameAZ')}</option>
                   <option value="name-desc">{t('sort.nameZA')}</option>
                 </select>

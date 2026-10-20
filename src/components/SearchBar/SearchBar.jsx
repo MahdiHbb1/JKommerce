@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import products from '../../data/products';
+import { useTranslation } from '../../hooks/useTranslation';
 import './SearchBar.css';
 
 const SearchBar = ({ isMobile, onClose }) => {
@@ -9,6 +10,7 @@ const SearchBar = ({ isMobile, onClose }) => {
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -73,14 +75,14 @@ const SearchBar = ({ isMobile, onClose }) => {
           type="text"
           id="search-batik"
           name="search"
-          placeholder="Search batik products..."
+          placeholder={t('search.placeholder')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
           autoComplete="off"
-          aria-label="Search batik products"
+          aria-label={t('search.placeholder')}
         />
-        <button type="submit" className="search-button" aria-label="Search">
+        <button type="submit" className="search-button" aria-label={t('common.search')}>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -110,7 +112,7 @@ const SearchBar = ({ isMobile, onClose }) => {
               className="view-all-button"
               onClick={handleViewAllResults}
             >
-              View all results for "{searchTerm}"
+              {t('search.viewAll', { term: searchTerm })}
             </button>
           )}
         </div>
@@ -119,8 +121,8 @@ const SearchBar = ({ isMobile, onClose }) => {
       {showResults && searchTerm.trim() && searchResults.length === 0 && (
         <div className="search-results">
           <div className="no-results">
-            <p>No products found for "{searchTerm}"</p>
-            <button onClick={() => navigate('/shop')}>Browse all products</button>
+            <p>{t('search.noResultsFor', { term: searchTerm })}</p>
+            <button onClick={() => navigate('/shop')}>{t('search.browseAll')}</button>
           </div>
         </div>
       )}

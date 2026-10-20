@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import { useTranslation } from '../../hooks/useTranslation';
 import CartItem from './CartItem';
 import Button from '../ui/Button';
 
@@ -12,6 +13,7 @@ import Button from '../ui/Button';
 
 const CartDrawer = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { cartItems: cart, updateQuantity, removeFromCart, getTotalPrice, getTotalItems } = useCart();
 
   // Prevent body scroll when drawer is open
@@ -26,6 +28,21 @@ const CartDrawer = ({ isOpen, onClose }) => {
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   // Handle checkout
   const handleCheckout = () => {
@@ -118,6 +135,8 @@ const CartDrawer = ({ isOpen, onClose }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-drawer-title"
+        aria-hidden={!isOpen}
+        inert={!isOpen ? '' : undefined}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-white">
@@ -126,17 +145,17 @@ const CartDrawer = ({ isOpen, onClose }) => {
             className="text-xl font-bold text-neutral-900 flex items-center gap-2"
           >
             <ShoppingBagIcon />
-            Shopping Cart
+            {t('cart.title')}
             {getTotalItems() > 0 && (
               <span className="ml-1 text-sm font-normal text-neutral-600">
-                ({getTotalItems()} {getTotalItems() === 1 ? 'item' : 'items'})
+                ({getTotalItems()})
               </span>
             )}
           </h2>
           <button
             onClick={onClose}
             className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-full transition-colors"
-            aria-label="Close cart"
+            aria-label={t('common.close')}
           >
             <CloseIcon />
           </button>
@@ -149,10 +168,10 @@ const CartDrawer = ({ isOpen, onClose }) => {
             <div className="flex flex-col items-center justify-center h-full text-center py-12">
               <EmptyCartIcon />
               <h3 className="mt-6 text-lg font-semibold text-neutral-900">
-                Your cart is empty
+                {t('cart.empty')}
               </h3>
               <p className="mt-2 text-sm text-neutral-600 max-w-xs">
-                Looks like you haven't added any batik products yet. Start shopping to fill your cart!
+                {t('cart.emptyMessage')}
               </p>
               <Button
                 variant="primary"
@@ -160,7 +179,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                 onClick={handleContinueShopping}
                 className="mt-6"
               >
-                Shop Now
+                {t('cart.startShopping')}
               </Button>
             </div>
           ) : (
@@ -183,7 +202,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
           <div className="border-t border-neutral-200 bg-white px-6 py-4 space-y-4">
             {/* Subtotal */}
             <div className="flex items-center justify-between">
-              <span className="text-base font-medium text-neutral-700">Subtotal:</span>
+              <span className="text-base font-medium text-neutral-700">{t('cart.subtotal')}:</span>
               <span className="text-2xl font-bold text-primary-600">
                 {formatPrice(getTotalPrice())}
               </span>
@@ -191,7 +210,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
 
             {/* Shipping Notice */}
             <p className="text-xs text-neutral-600 text-center">
-              Shipping and taxes calculated at checkout
+              {t('cart.shippingNotice')}
             </p>
 
             {/* Action Buttons */}
@@ -202,7 +221,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                 fullWidth
                 onClick={handleCheckout}
               >
-                Proceed to Checkout
+                {t('cart.proceedCheckout')}
               </Button>
               <Button
                 variant="ghost"
@@ -210,7 +229,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                 fullWidth
                 onClick={handleContinueShopping}
               >
-                Continue Shopping
+                {t('cart.continueShopping')}
               </Button>
             </div>
           </div>

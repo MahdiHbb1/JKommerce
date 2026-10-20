@@ -38,6 +38,8 @@ const ProductCard = ({ product, onAddToCart, onQuickView }) => {
     featured
   } = product;
 
+  const imageSrc = images?.[0];
+
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -142,7 +144,7 @@ const ProductCard = ({ product, onAddToCart, onQuickView }) => {
               )}
               {bestseller && (
                 <span className="inline-block px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-full shadow-sm">
-                  {t('product.bestseller')}
+                  {t('product.bestSeller')}
                 </span>
               )}
               {isOutOfStock && (
@@ -154,9 +156,9 @@ const ProductCard = ({ product, onAddToCart, onQuickView }) => {
           )}
 
           {/* Product Image */}
-          {!imageError ? (
+          {imageSrc && !imageError ? (
             <img 
-              src={images[0]} 
+              src={imageSrc}
               alt={name}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               loading="lazy"
@@ -179,6 +181,7 @@ const ProductCard = ({ product, onAddToCart, onQuickView }) => {
                   />
                 </svg>
                 <p className="text-sm font-medium">{name}</p>
+                <p className="text-xs text-white/70 mt-1">{t('product.noImage')}</p>
               </div>
             </div>
           )}

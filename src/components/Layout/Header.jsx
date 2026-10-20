@@ -54,6 +54,21 @@ const Header = () => {
     };
   }, [isMobileMenuOpen]);
 
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileMenuOpen]);
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
@@ -88,7 +103,7 @@ const Header = () => {
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <Link to="/" className="flex flex-col flex-shrink-0">
-              <h1 className="text-2xl font-bold text-primary-600 font-serif">Janoer Koening</h1>
+              <span className="text-2xl font-bold text-primary-600 font-serif">Janoer Koening</span>
               <span className="text-xs text-neutral-600 tracking-widest uppercase">Heritage Batik</span>
             </Link>
 
@@ -141,7 +156,7 @@ const Header = () => {
               {/* Mobile Search Toggle */}
               <button
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
-                className="md:hidden p-2 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors"
+                className="md:hidden p-3 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors"
                 aria-label={t('common.search')}
               >
                 <SearchIcon />
@@ -150,7 +165,7 @@ const Header = () => {
               {/* Wishlist */}
               <Link
                 to="/wishlist"
-                className="p-2 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative"
+                className="p-3 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative"
                 aria-label={t('nav.wishlist')}
               >
                 <HeartIcon />
@@ -164,7 +179,7 @@ const Header = () => {
               {/* Cart Button */}
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="p-2 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative"
+                className="p-3 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative"
                 aria-label={t('nav.cart')}
               >
                 <ShoppingBagIcon />
@@ -178,8 +193,10 @@ const Header = () => {
               {/* Mobile Menu Hamburger */}
               <button
                 onClick={toggleMobileMenu}
-                className="md:hidden p-2 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                className="md:hidden p-2.5 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                 aria-label="Toggle menu"
+                aria-expanded={isMobileMenuOpen}
+                aria-controls="mobile-menu"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {isMobileMenuOpen ? (
@@ -211,7 +228,10 @@ const Header = () => {
           />
 
           {/* Menu Panel */}
-          <div className="fixed top-20 left-0 right-0 bottom-0 bg-white z-40 md:hidden animate-slide-in-right overflow-y-auto">
+          <div
+            id="mobile-menu"
+            className="fixed top-20 left-0 right-0 bottom-0 bg-white z-40 md:hidden animate-slide-in-right overflow-y-auto"
+          >
             <nav className="flex flex-col p-6 space-y-4">
               {/* Language Toggle - Mobile */}
               <div className="pb-4 border-b border-neutral-200">

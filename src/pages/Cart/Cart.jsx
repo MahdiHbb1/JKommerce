@@ -37,8 +37,8 @@ const Cart = () => {
     return (
       <div className="cart-page">
         <PageMeta
-          title="Your cart"
-          description="Review the items in your batik cart before checking out."
+          title={t('cart.title')}
+          description={t('cart.metaDescription')}
         />
         <div className="container">
           <div className="empty-cart">
@@ -47,7 +47,7 @@ const Cart = () => {
                 <path d="M9 2L7.17 4H3c-.55 0-1 .45-1 1v14c0 .55.45 1 1 1h18c.55 0 1-.45 1-1V5c0-.55-.45-1-1-1h-4.17L15 2H9zm3 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" fill="currentColor" opacity="0.3"/>
               </svg>
             </div>
-            <h2>{t('cart.empty')}</h2>
+            <h1>{t('cart.empty')}</h1>
             <p>{t('cart.emptyMessage')}</p>
             <Link to="/shop">
               <Button variant="primary" size="large">{t('cart.startShopping')}</Button>
@@ -59,15 +59,12 @@ const Cart = () => {
   }
 
   const subtotal = getTotalPrice();
-  const shipping = subtotal > 0 ? 0 : 0; // Free shipping for now
-  const tax = Math.round(subtotal * 0.11); // 11% PPN (Indonesian VAT)
-  const total = subtotal + shipping + tax;
 
   return (
     <div className="cart-page">
       <PageMeta
-        title="Your cart"
-        description="Review the items in your batik cart before checking out."
+        title={t('cart.title')}
+        description={t('cart.metaDescription')}
       />
       <div className="container">
         <div className="cart-header">
@@ -83,7 +80,11 @@ const Cart = () => {
             {cartItems.map((item) => (
               <div key={item.cartItemId} className="cart-item">
                 <div className="cart-item-image">
-                  <img src={item.images[0]} alt={item.name} />
+                  {item.images?.[0] ? (
+                    <img src={item.images[0]} alt={item.name} />
+                  ) : (
+                    <span className="cart-item-no-image">{t('product.noImage')}</span>
+                  )}
                 </div>
 
                 <div className="cart-item-details">
@@ -149,7 +150,7 @@ const Cart = () => {
                     <span className="quantity-value">{item.quantity}</span>
                     <button 
                       onClick={() => handleQuantityChange(item.cartItemId, item.quantity, 1)}
-                      aria-label="Increase quantity"
+                      aria-label={t('cart.increaseQuantity')}
                     >
                       +
                     </button>
@@ -157,7 +158,7 @@ const Cart = () => {
                   <button 
                     onClick={() => handleRemoveItem(item.cartItemId, item.name)}
                     className="remove-item-btn"
-                    aria-label="Remove item"
+                    aria-label={t('cart.removeItem')}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                       <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
@@ -179,19 +180,18 @@ const Cart = () => {
             
             <div className="summary-row">
               <span>{t('cart.shipping')}</span>
-              <span className="free-shipping">{t('cart.freeShipping')}</span>
+              <span>{t('cart.shippingCalculated')}</span>
             </div>
-            
+
             <div className="summary-row">
               <span>{t('cart.tax')}</span>
-              <span>{formatCurrency(tax)}</span>
+              <span>{t('cart.taxIncluded')}</span>
             </div>
-            
+
             <div className="summary-divider"></div>
-            
-            <div className="summary-row summary-total">
-              <span>{t('cart.total')}</span>
-              <span>{formatCurrency(total)}</span>
+
+            <div className="shipping-notice">
+              <p>{t('cart.shippingNotice')}</p>
             </div>
 
             <Link to="/checkout">
@@ -205,11 +205,6 @@ const Cart = () => {
                 {t('cart.continueShopping')}
               </Button>
             </Link>
-
-            <div className="shipping-notice">
-              <p>{t('cart.freeShippingNotice')}</p>
-              <p>{t('cart.shippingTime')}</p>
-            </div>
           </div>
         </div>
       </div>

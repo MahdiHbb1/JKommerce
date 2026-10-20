@@ -7,7 +7,7 @@
 
 .footer-content {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1.5fr;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 3rem;
   padding-bottom: 2rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -111,11 +111,12 @@
 /* Bottom Bar */
 .footer-bottom {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding-top: 2rem;
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.6);
+  text-align: center;
 }
 
 .footer-bottom-links {
