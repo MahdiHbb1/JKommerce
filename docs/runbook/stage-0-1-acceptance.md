@@ -2,7 +2,7 @@
 
 Tanggal: 20 Oktober 2026
 Branch: `stage-0-1`
-Commit terakhir saat dokumen ini diperbarui: `c1389c2`
+Commit terakhir saat dokumen ini diperbarui: `9d224b9`
 PR review: https://github.com/MahdiHbb1/JKommerce/pull/1 (terbuka, belum di-merge)
 Lingkungan uji lokal: Windows, Node 25 (produksi memakai Node 20 LTS), Vite 5,
 Supabase project `janoer-koening` (`qktvhhzniaearlpzbffv`).
@@ -121,14 +121,20 @@ curl.exe -I https://<domain>/
   (Checkout 5/5 + OrderHistory 3/3, ProductDetail 6/6). Tidak ada assertion
   yang gagal. Run penuh sebelumnya pada kode yang sama secara fungsional:
   69/69 PASS.
-- Lint: **0 error, 65 warning** (warning lama a11y/unused, bukan regresi).
+- Lint: **0 error, 63 warning** (warning lama a11y/unused, bukan regresi).
 - Build: `npm run build` **OK**.
 - Browser terakhir: Home, Shop, Cart, cart drawer, footer, detail produk,
-  desktop 1360 px dan mobile 390 px; 0 console/page error, 0 overflow,
-  target ikon header 44 px, drawer bisa ditutup dengan Escape.
+  pratinjau cepat, pencarian, favorit, checkout gate, desktop 1360 px dan mobile
+  390 px; 0 console/page error, 0 overflow, target ikon header 44 px, drawer dan
+  QuickView bisa ditutup dengan Escape, menu mobile bisa ditutup dengan Escape.
+- Pencarian: bug crash `toLowerCase` pada data produk tidak lengkap diperbaiki;
+  saran pencarian memakai katalog Supabase dengan fallback seed, bisa dipilih
+  dengan keyboard, dan menampilkan fallback gambar.
 - Hardening konten: tidak ada klaim gratis ongkir, PPN 11% hardcode, testimoni
   karangan, label "Terlaris", kontak placeholder, atau tautan footer mati yang
-  tampil di storefront.
+  tampil di storefront; em dash di copy yang terlihat sudah dihapus.
+- Bahasa: toggle ID/EN memakai kontras yang benar dan label aksesibel sesuai
+  bahasa aktif.
 
 Catatan lingkungan: Node 25 di mesin ini kadang gagal membuat worker Vitest
 (`Timeout waiting for worker to respond`); rerun dengan `--maxWorkers=1`
