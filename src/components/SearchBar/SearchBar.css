@@ -16,7 +16,8 @@
 
 .search-input {
   width: 100%;
-  padding: 10px 45px 10px 15px;
+  min-height: 44px;
+  padding: 10px 52px 10px 15px;
   border: 2px solid #ddd;
   border-radius: 25px;
   font-size: 14px;
@@ -32,10 +33,13 @@
 
 .search-button {
   position: absolute;
-  right: 5px;
+  right: 0;
+  width: 44px;
+  height: 44px;
   background: none;
   border: none;
-  padding: 8px 12px;
+  border-radius: 50%;
+  padding: 0;
   cursor: pointer;
   color: #666;
   display: flex;
