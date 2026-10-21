@@ -22,7 +22,7 @@ const NotFound = () => {
                   </pattern>
                 </defs>
                 <rect width="200" height="200" fill="url(#batik-404)"/>
-                <text x="100" y="120" fontSize="72" fontWeight="700" fill="#1a3a52" textAnchor="middle" fontFamily="Playfair Display, serif">404</text>
+                <text x="100" y="120" fontSize="72" fontWeight="700" fill="#1a3a52" textAnchor="middle" fontFamily="'Playfair Display Variable', Georgia, serif">404</text>
               </svg>
             </div>
           </div>
