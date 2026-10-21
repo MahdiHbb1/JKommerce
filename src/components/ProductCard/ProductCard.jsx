@@ -3,28 +3,13 @@ import { Link } from 'react-router-dom';
 import { formatPrice } from '../../data/products';
 import { useWishlist } from '../../context/WishlistContext';
 import { useTranslation } from '../../hooks/useTranslation';
-import Button from '../ui/Button';
-
-/**
- * ProductCard Component with Tailwind CSS
- * 
- * Features:
- * - Responsive card design with hover effects
- * - Image with scale animation on hover
- * - Quick actions overlay (Quick View, Wishlist)
- * - Category badge
- * - Product info with truncated name
- * - Price display
- * - Add to Cart button
- * - Stock status
- * - Wishlist integration
- */
+import Icon from '../ui/Icon';
 
 const ProductCard = ({ product, onAddToCart, onQuickView }) => {
   const [imageError, setImageError] = useState(false);
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { t } = useTranslation();
-  
+
   const {
     id,
     name,
@@ -34,224 +19,134 @@ const ProductCard = ({ product, onAddToCart, onQuickView }) => {
     category,
     images,
     stock,
-    bestseller,
-    featured
+    featured,
   } = product;
 
   const imageSrc = images?.[0];
-
-  const handleAddToCart = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (onAddToCart && !isOutOfStock) {
-      onAddToCart(product);
-    }
-  };
-
-  const handleQuickView = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (onQuickView) {
-      onQuickView(product);
-    }
-  };
-
-  const handleWishlistToggle = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleWishlist(product);
-  };
-
+  const productPath = `/product/${slug || id}`;
   const isOutOfStock = stock === 0;
   const inWishlist = isInWishlist(id);
+  const hasImage = Boolean(imageSrc) && !imageError;
 
-  // Eye icon for Quick View
-  const EyeIcon = () => (
-    <svg
-      className="w-5 h-5"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-      />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-      />
-    </svg>
-  );
-
-  // Heart icon for Wishlist
-  const HeartIcon = ({ filled }) => (
-    <svg
-      className="w-5 h-5"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-      />
-    </svg>
-  );
-
-  // Shopping cart icon
-  const CartIcon = () => (
-    <svg
-      className="w-5 h-5"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-      />
-    </svg>
-  );
+  const controlClass =
+    'inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-paper-raised)] text-[var(--color-ink-soft)] shadow-[var(--shadow-lift)] transition-colors duration-200 hover:border-[var(--color-line-strong)] hover:text-[var(--color-brown-ink)]';
 
   return (
-    <div className="group relative bg-white rounded-lg shadow-soft hover:shadow-hover transition-all duration-300">
-      <Link to={`/product/${slug || id}`} className="block">
-        {/* Image Container */}
-        <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg bg-neutral-100">
-          {/* Category Badge - Top Left */}
-          <div className="absolute top-3 left-3 z-10">
-            <span className="inline-block px-3 py-1 bg-accent-500 text-white text-xs font-semibold rounded-full shadow-sm">
-              {pattern}
-            </span>
-          </div>
-
-          {/* Status Badges - Top Right */}
-          {(featured || bestseller || isOutOfStock) && (
-            <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
-              {featured && (
-                <span className="inline-block px-3 py-1 bg-primary-600 text-white text-xs font-semibold rounded-full shadow-sm">
-                  {t('product.featured')}
-                </span>
-              )}
-              {bestseller && (
-                <span className="inline-block px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-full shadow-sm">
-                  {t('product.bestSeller')}
-                </span>
-              )}
-              {isOutOfStock && (
-                <span className="inline-block px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded-full shadow-sm">
-                  {t('product.outOfStock')}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Product Image */}
-          {imageSrc && !imageError ? (
-            <img 
+    <article className="group flex h-full flex-col overflow-hidden rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-paper-raised)] transition-colors duration-200 hover:border-[var(--color-line-strong)]">
+      <div className="relative aspect-[3/4] overflow-hidden bg-[var(--color-paper-deep)]">
+        <Link
+          to={productPath}
+          className="block h-full"
+          aria-label={`${t('product.viewDetails')}: ${name}`}
+        >
+          {hasImage ? (
+            <img
               src={imageSrc}
               alt={name}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              className="h-full w-full object-cover transition-transform duration-500 ease-[var(--ease-out)] group-hover:scale-[1.03]"
               loading="lazy"
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-primary-700">
-              <div className="text-center text-white px-4">
-                <svg
-                  className="w-16 h-16 mx-auto mb-2 opacity-50"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <p className="text-sm font-medium">{name}</p>
-                <p className="text-xs text-white/70 mt-1">{t('product.noImage')}</p>
-              </div>
-            </div>
+            <span className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-[var(--color-ink-soft)]">
+              <Icon name="imageOff" size={28} />
+              <span className="text-sm font-medium text-[var(--color-ink)]">
+                {t('product.noImage')}
+              </span>
+            </span>
           )}
+        </Link>
 
-          {/* Quick Actions Overlay */}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
-            {/* Quick View Button */}
-            {onQuickView && (
-              <button
-                onClick={handleQuickView}
-                className="p-3 bg-white text-primary-600 rounded-full hover:bg-primary-600 hover:text-white transition-colors shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300"
-                aria-label={t('product.quickView')}
-              >
-                <EyeIcon />
-              </button>
-            )}
-
-            {/* Wishlist Button */}
-            <button
-              onClick={handleWishlistToggle}
-              className={`p-3 rounded-full transition-all shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75 ${
-                inWishlist
-                  ? 'bg-red-500 text-white hover:bg-red-600'
-                  : 'bg-white text-neutral-600 hover:bg-red-500 hover:text-white'
-              }`}
-              aria-label={inWishlist ? t('product.removeFromWishlist') : t('product.addToWishlist')}
-            >
-              <HeartIcon filled={inWishlist} />
-            </button>
-          </div>
-
-          {/* Out of Stock Overlay */}
-          {isOutOfStock && (
-            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-              <span className="text-white text-lg font-bold">{t('product.outOfStock')}</span>
-            </div>
+        <div className="pointer-events-none absolute left-3 top-3 z-20">
+          {pattern && (
+            <span className="inline-flex items-center rounded-[var(--radius-xs)] border border-[var(--color-line-strong)] bg-[var(--color-paper-raised)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink)]">
+              {pattern}
+            </span>
           )}
         </div>
 
-        {/* Product Info */}
-        <div className="p-4">
-          {/* Category */}
-          <p className="text-xs font-medium text-neutral-600 uppercase tracking-wider mb-1">
-            {category}
-          </p>
+        {featured && (
+          <div className="pointer-events-none absolute right-3 top-3 z-20">
+            <span className="inline-flex items-center rounded-[var(--radius-xs)] border border-[var(--color-gold)] bg-[var(--color-paper-raised)] px-2.5 py-1 text-xs font-medium text-[var(--color-gold)]">
+              {t('product.featured')}
+            </span>
+          </div>
+        )}
 
-          {/* Product Name */}
-          <h3 className="text-lg font-semibold text-neutral-900 mb-2 truncate group-hover:text-primary-600 transition-colors">
+        <div className="absolute inset-x-3 bottom-3 z-20 flex justify-end gap-2">
+          {onQuickView && (
+            <button
+              type="button"
+              onClick={() => onQuickView(product)}
+              className={controlClass}
+              aria-label={t('product.quickView')}
+            >
+              <Icon name="quickView" size={20} />
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => toggleWishlist(product)}
+            className={`${controlClass} ${
+              inWishlist ? 'text-[var(--color-danger)]' : ''
+            }`}
+            aria-label={
+              inWishlist
+                ? t('product.removeFromWishlist')
+                : t('product.addToWishlist')
+            }
+            aria-pressed={inWishlist}
+          >
+            <Icon name="heart" size={20} weight={inWishlist ? 'fill' : 'regular'} />
+          </button>
+        </div>
+
+        {isOutOfStock && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[rgba(28,25,23,0.72)]">
+            <span className="text-sm font-semibold text-[var(--color-paper)]">
+              {t('product.outOfStock')}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-1 flex-col p-4">
+        <p className="text-xs font-medium text-[var(--color-ink-faint)]">
+          {category}
+        </p>
+
+        <h3 className="mt-1 font-serif text-lg leading-snug text-[var(--color-ink)]">
+          <Link
+            to={productPath}
+            className="underline-offset-4 transition-colors duration-200 hover:text-[var(--color-gold)] hover:underline"
+          >
             {name}
-          </h3>
+          </Link>
+        </h3>
 
-          {/* Price */}
-          <p className="text-xl font-bold text-primary-600 mb-4">
+        <div className="mt-auto pt-4">
+          <p className="text-lg font-semibold tabular-nums text-[var(--color-brown-ink)]">
             {formatPrice(price)}
           </p>
+          <p className="mt-0.5 text-xs text-[var(--color-ink-soft)]">
+            {isOutOfStock
+              ? t('product.outOfStock')
+              : t('product.stockAvailable', { stock })}
+          </p>
 
-          {/* Add to Cart Button */}
-          <Button
-            variant="primary"
-            size="md"
-            fullWidth
-            onClick={handleAddToCart}
+          <button
+            type="button"
+            onClick={() => onAddToCart?.(product)}
             disabled={isOutOfStock}
-            icon={<CartIcon />}
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-brown-ink)] bg-[var(--color-brown-ink)] px-4 text-sm font-semibold text-[var(--color-paper)] transition-colors duration-200 enabled:hover:border-[var(--color-brown-deep)] enabled:hover:bg-[var(--color-brown-deep)] disabled:cursor-not-allowed disabled:border-[var(--color-line-strong)] disabled:bg-[var(--color-paper-deep)] disabled:text-[var(--color-ink-soft)]"
           >
+            <Icon name="bag" size={18} />
             {isOutOfStock ? t('product.outOfStock') : t('product.addToCart')}
-          </Button>
+          </button>
         </div>
-      </Link>
-    </div>
+      </div>
+    </article>
   );
 };
 
