@@ -9,7 +9,9 @@ export const translations = {
       checkout: 'Pembayaran',
       wishlist: 'Favorit',
       orders: 'Riwayat Pesanan',
-      account: 'Akun Saya'
+      account: 'Akun Saya',
+      menu: 'Menu',
+      primary: 'Navigasi utama'
     },
 
     // Product related
@@ -567,7 +569,8 @@ export const translations = {
       search: 'Cari',
       switchToEnglish: 'Ganti ke Bahasa Inggris',
       switchToIndonesian: 'Ganti ke Bahasa Indonesia',
-      retry: 'Coba lagi'
+      retry: 'Coba lagi',
+      skipToContent: 'Lewati ke konten utama'
     },
 
     // Pagination
@@ -623,7 +626,9 @@ export const translations = {
       checkout: 'Checkout',
       wishlist: 'Wishlist',
       orders: 'My Orders',
-      account: 'Account'
+      account: 'Account',
+      menu: 'Menu',
+      primary: 'Primary navigation'
     },
 
     // Product related
@@ -1183,7 +1188,8 @@ export const translations = {
       download: 'Download',
       upload: 'Upload',
       print: 'Print',
-      refresh: 'Refresh'
+      refresh: 'Refresh',
+      skipToContent: 'Skip to main content'
     },
 
     // Pagination
