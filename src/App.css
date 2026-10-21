@@ -26,7 +26,7 @@
 }
 
 body {
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
   color: var(--text-primary);
   background-color: var(--neutral-cream);
   line-height: 1.6;

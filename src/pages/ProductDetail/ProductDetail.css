@@ -296,7 +296,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   min-width: 120px;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
 }
 
 .wishlist-action-btn:hover {

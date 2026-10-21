@@ -20,7 +20,7 @@
   border: 2px solid #ddd;
   border-radius: 25px;
   font-size: 14px;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
   transition: all 0.3s ease;
   background: white;
 }
@@ -145,7 +145,7 @@
   color: white;
   border: none;
   border-radius: 0 0 12px 12px;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -173,7 +173,7 @@
   color: white;
   border: none;
   border-radius: 20px;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.3s ease;
