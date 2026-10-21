@@ -120,6 +120,18 @@ const Home = () => {
       );
     }
 
+    if (!isLoading && !loadError && items.length === 0) {
+      return (
+        <div className="home-products__state">
+          <h3>{t('home.collectionEmptyTitle')}</h3>
+          <p>{t('home.collectionEmptyBody')}</p>
+          <Link to="/shop" className="home-button home-button--primary">
+            {t('home.collectionEmptyCta')}
+          </Link>
+        </div>
+      );
+    }
+
     return (
       <ProductGrid
         products={items}
@@ -132,8 +144,8 @@ const Home = () => {
   return (
     <div className="home-page">
       <PageMeta
-        title="Batik tulis, cap, dan printing"
-        description="Katalog batik Janoer Koening dengan keterangan motif, ukuran, dan stok tiap kain."
+        title={t('home.metaTitle')}
+        description={t('home.metaDescription')}
       />
 
       <section className="home-hero" aria-labelledby="home-hero-title">

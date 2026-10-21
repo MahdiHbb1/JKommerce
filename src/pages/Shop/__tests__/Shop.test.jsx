@@ -97,6 +97,7 @@ const renderShop = () =>
   );
 
 beforeEach(() => {
+  localStorage.setItem('janoerkoening_language', 'id');
   vi.clearAllMocks();
 });
 
@@ -135,10 +136,10 @@ describe('Shop katalog dari Supabase', () => {
     renderShop();
 
     expect(
-      await screen.findByText('The catalog could not be loaded.'),
+      await screen.findByText('Katalog belum bisa dimuat.'),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Coba lagi' }));
 
     expect(await screen.findByText('Parang Heritage')).toBeInTheDocument();
     expect(fetchProducts).toHaveBeenCalledTimes(2);
@@ -149,10 +150,10 @@ describe('Shop katalog dari Supabase', () => {
 
     renderShop();
 
-    expect(await screen.findByText('No products yet')).toBeInTheDocument();
+    expect(await screen.findByText('Belum ada produk')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'The collection will appear here once active products are added.',
+        'Koleksi akan tampil di sini setelah produk aktif ditambahkan.',
       ),
     ).toBeInTheDocument();
   });
