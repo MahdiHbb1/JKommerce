@@ -31,7 +31,11 @@ export const translations = {
       switchToSignUp: 'Belum punya akun?',
       switchToSignIn: 'Sudah punya akun?',
       signOutFailed: 'Gagal keluar dari akun.',
-      authFailed: 'Autentikasi gagal.'
+      authFailed: 'Autentikasi gagal. Periksa email dan kata sandi Anda.',
+      invalidCredentials: 'Email atau kata sandi salah.',
+      emailNotConfirmed: 'Email belum dikonfirmasi. Periksa kotak masuk Anda.',
+      userExists: 'Email sudah terdaftar. Silakan masuk.',
+      passwordTooShort: 'Kata sandi minimal 6 karakter.'
     },
 
     // Product related
@@ -389,8 +393,10 @@ export const translations = {
     // Wishlist
     wishlist: {
       title: 'Daftar Favorit',
+      metaDescription: 'Kain batik favorit yang Anda simpan untuk dilihat kembali.',
       empty: 'Belum Ada Favorit',
       emptyMessage: 'Simpan produk favorit Anda untuk kemudahan berbelanja',
+      itemsHeading: 'Karya favorit',
       addToWishlist: 'Simpan ke Favorit',
       removeFromWishlist: 'Hapus dari Favorit',
       addedToWishlist: 'Ditambahkan ke favorit',
@@ -401,6 +407,7 @@ export const translations = {
       remove: 'Hapus',
       clearAll: 'Hapus Semua',
       continueShopping: 'Lanjutkan Berbelanja',
+      item: 'item',
       items: 'item'
     },
 
@@ -705,7 +712,11 @@ export const translations = {
       switchToSignUp: "Don't have an account?",
       switchToSignIn: 'Already have an account?',
       signOutFailed: 'Sign out failed.',
-      authFailed: 'Authentication failed.'
+      authFailed: 'Authentication failed. Check your email and password.',
+      invalidCredentials: 'Incorrect email or password.',
+      emailNotConfirmed: 'Email not confirmed. Check your inbox.',
+      userExists: 'This email is already registered. Please sign in.',
+      passwordTooShort: 'Password must be at least 6 characters.'
     },
 
     // Product related
@@ -1063,9 +1074,11 @@ export const translations = {
 
     // Wishlist
     wishlist: {
-      title: 'Wishlist',
+      title: 'My Wishlist',
+      metaDescription: 'Your saved batik pieces, ready to revisit.',
       empty: 'Your Wishlist is Empty',
       emptyMessage: 'No products in your wishlist yet',
+      itemsHeading: 'Saved pieces',
       addToWishlist: 'Add to Wishlist',
       removeFromWishlist: 'Remove from Wishlist',
       addedToWishlist: 'Added to wishlist',
@@ -1076,6 +1089,7 @@ export const translations = {
       remove: 'Remove',
       clearAll: 'Clear All',
       continueShopping: 'Continue Shopping',
+      item: 'item',
       items: 'items'
     },
 

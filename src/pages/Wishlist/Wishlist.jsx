@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
@@ -25,8 +25,17 @@ const Wishlist = () => {
   const { success } = useToast();
   const { t } = useTranslation();
   const [quickViewProduct, setQuickViewProduct] = useState(null);
+  const [justCleared, setJustCleared] = useState(false);
+  const emptyHeadingRef = useRef(null);
 
   const products = wishlistItems.map(normalizeProduct);
+
+  useEffect(() => {
+    if (justCleared && products.length === 0) {
+      emptyHeadingRef.current?.focus();
+      setJustCleared(false);
+    }
+  }, [justCleared, products.length]);
 
   const handleAddToCart = (product) => {
     if (product.stock !== undefined && product.stock <= 0) {
@@ -34,7 +43,12 @@ const Wishlist = () => {
     }
 
     addToCart(product, 1);
-    success(t('notifications.addedToCart', { name: product.name }));
+    success(t('notifications.addedToCart'));
+  };
+
+  const handleClear = () => {
+    clearWishlist();
+    setJustCleared(true);
   };
 
   const handleQuickView = (product) => {
@@ -49,7 +63,7 @@ const Wishlist = () => {
     <div className="wishlist-page">
       <PageMeta
         title={t('wishlist.title')}
-        description={t('wishlist.emptyMessage')}
+        description={t('wishlist.metaDescription')}
       />
 
       <div className="wishlist-container">
@@ -59,7 +73,10 @@ const Wishlist = () => {
             <h1>{t('wishlist.title')}</h1>
             {products.length > 0 && (
               <p className="wishlist-count">
-                {products.length} {t('wishlist.items')}
+                {products.length}{' '}
+                {products.length === 1
+                  ? t('wishlist.item')
+                  : t('wishlist.items')}
               </p>
             )}
           </div>
@@ -68,7 +85,7 @@ const Wishlist = () => {
             <button
               type="button"
               className="wishlist-clear"
-              onClick={clearWishlist}
+              onClick={handleClear}
             >
               {t('wishlist.clearAll')}
             </button>
@@ -80,7 +97,13 @@ const Wishlist = () => {
             <span className="wishlist-empty__icon">
               <Icon name="heart" size={30} />
             </span>
-            <h2 id="wishlist-empty-title">{t('wishlist.empty')}</h2>
+            <h2
+              id="wishlist-empty-title"
+              ref={emptyHeadingRef}
+              tabIndex={-1}
+            >
+              {t('wishlist.empty')}
+            </h2>
             <p>{t('wishlist.emptyMessage')}</p>
             <Link to="/shop" className="wishlist-cta">
               {t('wishlist.continueShopping')}
@@ -88,11 +111,16 @@ const Wishlist = () => {
           </section>
         ) : (
           <>
-            <ProductGrid
-              products={products}
-              onAddToCart={handleAddToCart}
-              onQuickView={handleQuickView}
-            />
+            <section aria-labelledby="wishlist-items-title">
+              <h2 id="wishlist-items-title" className="sr-only">
+                {t('wishlist.itemsHeading')}
+              </h2>
+              <ProductGrid
+                products={products}
+                onAddToCart={handleAddToCart}
+                onQuickView={handleQuickView}
+              />
+            </section>
 
             <div className="wishlist-footer">
               <Link to="/shop" className="wishlist-text-link">

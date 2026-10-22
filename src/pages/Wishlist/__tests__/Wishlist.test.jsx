@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import Wishlist from '../Wishlist';
@@ -34,12 +34,15 @@ vi.mock('../../../hooks/useTranslation', () => {
   const strings = {
     'nav.wishlist': 'Favorit',
     'wishlist.title': 'Daftar Favorit',
+    'wishlist.metaDescription': 'Kain batik favorit yang Anda simpan untuk dilihat kembali.',
+    'wishlist.itemsHeading': 'Karya favorit',
+    'wishlist.item': 'item',
     'wishlist.items': 'item',
     'wishlist.clearAll': 'Hapus Semua',
     'wishlist.empty': 'Belum Ada Favorit',
     'wishlist.emptyMessage': 'Simpan produk favorit Anda untuk kemudahan berbelanja',
     'wishlist.continueShopping': 'Lanjutkan Berbelanja',
-    'notifications.addedToCart': '"{name}" ditambahkan ke keranjang',
+    'notifications.addedToCart': 'telah ditambahkan ke keranjang',
     'product.addToCart': 'Masukkan Keranjang',
     'product.quickView': 'Pratinjau Cepat',
     'product.addToWishlist': 'Simpan ke Favorit',
@@ -132,5 +135,32 @@ describe('Wishlist', () => {
     expect(
       screen.getByRole('link', { name: 'Lanjutkan Berbelanja' }),
     ).toHaveAttribute('href', '/shop');
+  });
+
+  it('menambahkan produk ke keranjang dengan jumlah dan pesan yang benar', () => {
+    mocks.wishlistItems = [wishlistItem];
+    renderWishlist();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Masukkan Keranjang' }),
+    );
+
+    expect(mocks.addToCart).toHaveBeenCalledTimes(1);
+    expect(mocks.addToCart).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'product-1' }),
+      1,
+    );
+    expect(mocks.success).toHaveBeenCalledWith(
+      'telah ditambahkan ke keranjang',
+    );
+  });
+
+  it('menghapus semua favorit lewat aksi yang terlihat', () => {
+    mocks.wishlistItems = [wishlistItem];
+    renderWishlist();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Semua' }));
+
+    expect(mocks.clearWishlist).toHaveBeenCalledTimes(1);
   });
 });

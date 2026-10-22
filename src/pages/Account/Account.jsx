@@ -15,6 +15,22 @@ const Account = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const getAuthErrorKey = (message = '') => {
+    if (/invalid login credentials/i.test(message)) {
+      return 'account.invalidCredentials';
+    }
+    if (/email not confirmed/i.test(message)) {
+      return 'account.emailNotConfirmed';
+    }
+    if (/user already registered/i.test(message)) {
+      return 'account.userExists';
+    }
+    if (/password should be at least/i.test(message)) {
+      return 'account.passwordTooShort';
+    }
+    return 'account.authFailed';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -27,7 +43,7 @@ const Account = () => {
         await signUp(email, password);
       }
     } catch (err) {
-      setError(err.message || t('account.authFailed'));
+      setError(t(getAuthErrorKey(err.message)));
     } finally {
       setLoading(false);
     }
@@ -36,8 +52,8 @@ const Account = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-    } catch (err) {
-      setError(err.message || t('account.signOutFailed'));
+    } catch {
+      setError(t('account.signOutFailed'));
     }
   };
 
