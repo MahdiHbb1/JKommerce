@@ -14,6 +14,26 @@ export const translations = {
       primary: 'Navigasi utama'
     },
 
+    // Account
+    account: {
+      title: 'Akun',
+      metaDescription: 'Masuk ke akun Anda untuk melihat profil dan riwayat pesanan.',
+      notConfigured: 'Autentikasi belum dikonfigurasi. Siapkan Supabase untuk mengaktifkan fitur akun.',
+      profileTitle: 'Informasi Profil',
+      emailLabel: 'Email',
+      userIdLabel: 'ID Pengguna',
+      signOut: 'Keluar',
+      signIn: 'Masuk',
+      signUp: 'Daftar',
+      createAccount: 'Buat Akun',
+      passwordLabel: 'Kata Sandi',
+      processing: 'Memproses...',
+      switchToSignUp: 'Belum punya akun?',
+      switchToSignIn: 'Sudah punya akun?',
+      signOutFailed: 'Gagal keluar dari akun.',
+      authFailed: 'Autentikasi gagal.'
+    },
+
     // Product related
     product: {
       addToCart: 'Masukkan Keranjang',
@@ -379,6 +399,8 @@ export const translations = {
       save: 'Simpan',
       moveToCart: 'Masukkan ke Keranjang',
       remove: 'Hapus',
+      clearAll: 'Hapus Semua',
+      continueShopping: 'Lanjutkan Berbelanja',
       items: 'item'
     },
 
@@ -664,6 +686,26 @@ export const translations = {
       account: 'Account',
       menu: 'Menu',
       primary: 'Primary navigation'
+    },
+
+    // Account
+    account: {
+      title: 'Account',
+      metaDescription: 'Sign in to view your profile and order history.',
+      notConfigured: 'Authentication is not configured. Set up Supabase to enable account features.',
+      profileTitle: 'Profile Information',
+      emailLabel: 'Email',
+      userIdLabel: 'User ID',
+      signOut: 'Sign Out',
+      signIn: 'Sign In',
+      signUp: 'Sign Up',
+      createAccount: 'Create Account',
+      passwordLabel: 'Password',
+      processing: 'Processing...',
+      switchToSignUp: "Don't have an account?",
+      switchToSignIn: 'Already have an account?',
+      signOutFailed: 'Sign out failed.',
+      authFailed: 'Authentication failed.'
     },
 
     // Product related
@@ -1032,6 +1074,8 @@ export const translations = {
       save: 'Save',
       moveToCart: 'Move to Cart',
       remove: 'Remove',
+      clearAll: 'Clear All',
+      continueShopping: 'Continue Shopping',
       items: 'items'
     },
 

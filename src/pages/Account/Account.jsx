@@ -8,7 +8,7 @@ import './Account.css';
 const Account = () => {
   const { user, signIn, signUp, signOut, isSupabaseConfigured } = useAuth();
   const { t } = useTranslation();
-  
+
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +27,7 @@ const Account = () => {
         await signUp(email, password);
       }
     } catch (err) {
-      setError(err.message || 'Authentication failed');
+      setError(err.message || t('account.authFailed'));
     } finally {
       setLoading(false);
     }
@@ -37,7 +37,7 @@ const Account = () => {
     try {
       await signOut();
     } catch (err) {
-      setError(err.message || 'Sign out failed');
+      setError(err.message || t('account.signOutFailed'));
     }
   };
 
@@ -45,15 +45,13 @@ const Account = () => {
     return (
       <div className="account-page">
         <PageMeta
-          title="Account"
-          description="Manage your account settings and preferences."
+          title={t('account.title')}
+          description={t('account.metaDescription')}
         />
         <div className="container">
           <div className="account-container">
-            <h1>{t('nav.account')}</h1>
-            <p className="auth-not-configured">
-              Authentication is not configured. Please set up Supabase to enable account features.
-            </p>
+            <h1>{t('account.title')}</h1>
+            <p className="auth-not-configured">{t('account.notConfigured')}</p>
           </div>
         </div>
       </div>
@@ -64,22 +62,32 @@ const Account = () => {
     return (
       <div className="account-page">
         <PageMeta
-          title="My Account"
-          description="View your account details and order history."
+          title={t('account.title')}
+          description={t('account.metaDescription')}
         />
         <div className="container">
           <div className="account-container">
             <h1>{t('nav.account')}</h1>
             <div className="account-details">
               <div className="account-info">
-                <h2>Profile Information</h2>
-                <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>User ID:</strong> {user.id}</p>
+                <h2>{t('account.profileTitle')}</h2>
+                <p>
+                  <strong>{t('account.emailLabel')}:</strong> {user.email}
+                </p>
+                <p>
+                  <strong>{t('account.userIdLabel')}:</strong> {user.id}
+                </p>
               </div>
-              
+
+              {error && (
+                <p className="error-message" role="alert">
+                  {error}
+                </p>
+              )}
+
               <div className="account-actions">
                 <Button variant="outline" size="large" onClick={handleSignOut}>
-                  Sign Out
+                  {t('account.signOut')}
                 </Button>
               </div>
             </div>
@@ -92,16 +100,16 @@ const Account = () => {
   return (
     <div className="account-page">
       <PageMeta
-        title={isLoginMode ? 'Sign In' : 'Sign Up'}
-        description={isLoginMode ? 'Sign in to your account' : 'Create a new account'}
+        title={isLoginMode ? t('account.signIn') : t('account.createAccount')}
+        description={t('account.metaDescription')}
       />
       <div className="container">
         <div className="account-container">
-          <h1>{isLoginMode ? 'Sign In' : 'Create Account'}</h1>
-          
+          <h1>{isLoginMode ? t('account.signIn') : t('account.createAccount')}</h1>
+
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email">{t('account.emailLabel')}</label>
               <input
                 type="email"
                 id="email"
@@ -111,9 +119,9 @@ const Account = () => {
                 autoComplete="email"
               />
             </div>
-            
+
             <div className="form-group">
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password">{t('account.passwordLabel')}</label>
               <input
                 type="password"
                 id="password"
@@ -124,31 +132,37 @@ const Account = () => {
                 minLength={6}
               />
             </div>
-            
-            {error && <p className="error-message">{error}</p>}
-            
-            <Button 
-              variant="primary" 
-              size="large" 
-              type="submit" 
+
+            {error && (
+              <p className="error-message" role="alert">
+                {error}
+              </p>
+            )}
+
+            <Button
+              variant="primary"
+              size="large"
+              type="submit"
               fullWidth
               disabled={loading}
             >
-              {loading ? 'Processing...' : (isLoginMode ? 'Sign In' : 'Create Account')}
+              {loading ? t('account.processing') : (isLoginMode ? t('account.signIn') : t('account.createAccount'))}
             </Button>
           </form>
-          
+
           <p className="auth-switch">
-            {isLoginMode ? "Don't have an account? " : 'Already have an account? '}
-            <button 
-              type="button" 
+            {isLoginMode
+              ? t('account.switchToSignUp')
+              : t('account.switchToSignIn')}{' '}
+            <button
+              type="button"
               onClick={() => {
                 setIsLoginMode(!isLoginMode);
                 setError('');
               }}
               className="link-button"
             >
-              {isLoginMode ? 'Sign Up' : 'Sign In'}
+              {isLoginMode ? t('account.signUp') : t('account.signIn')}
             </button>
           </p>
         </div>

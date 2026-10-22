@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useToast } from '../../context/ToastContext';
+import { useTranslation } from '../../hooks/useTranslation';
 
 /**
  * ToastContainer Component
@@ -10,7 +11,12 @@ const ToastContainer = () => {
   const { toasts, removeToast } = useToast();
 
   return (
-    <div className="fixed top-20 right-4 z-50 space-y-3 pointer-events-none">
+    <div
+      className="fixed top-20 right-4 z-50 space-y-3 pointer-events-none"
+      role="status"
+      aria-live="polite"
+      aria-atomic="false"
+    >
       {toasts.map((toast) => (
         <Toast key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
       ))}
@@ -19,7 +25,8 @@ const ToastContainer = () => {
 };
 
 const Toast = ({ toast, onClose }) => {
-  const { id, message, type } = toast;
+  const { message, type } = toast;
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Auto-close animation
@@ -103,7 +110,7 @@ const Toast = ({ toast, onClose }) => {
         <button
           onClick={onClose}
           className="flex-shrink-0 text-neutral-400 hover:text-neutral-600 transition-colors"
-          aria-label="Close"
+          aria-label={t('common.close')}
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path
