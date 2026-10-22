@@ -299,8 +299,8 @@ const Shop = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageMeta
-        title="Shop batik collection"
-        description="Browse batik tulis, batik cap, and batik printing pieces with filters, sorting, and quick view."
+        title={t('shop.title')}
+        description={t('shop.description')}
       />
       <div className="container mx-auto px-4 py-8">
         {/* Page Header */}
@@ -311,7 +311,7 @@ const Shop = () => {
           {searchQuery ? (
             <div className="space-y-1">
               <p className="text-lg text-gray-600">
-                {t('search.resultsFor')} "<strong className="text-batik-orange">{searchQuery}</strong>"
+                {t('search.resultsFor')} "<strong className="text-[var(--color-gold)]">{searchQuery}</strong>"
               </p>
               <p className="text-sm text-gray-500">
                 {filteredProducts.length > 0 
@@ -356,7 +356,7 @@ const Shop = () => {
                   id="sort"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-batik-orange focus:border-transparent"
+                  className="px-4 py-2 min-h-11 border border-[var(--color-line-strong)] rounded-[var(--radius-sm)] bg-[var(--color-paper-raised)] text-[var(--color-ink)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)] focus:border-[var(--color-gold)]"
                 >
                   <option value="featured">{t('sort.featured')}</option>
                   <option value="newest">{t('sort.newest')}</option>

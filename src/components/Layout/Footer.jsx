@@ -9,11 +9,11 @@ const Footer = () => {
 
   return (
     <footer className="footer">
-      <div className="container">
+      <div className="container-custom">
         <div className="footer-content">
           {/* Brand Section */}
           <div className="footer-section">
-            <h3 className="footer-brand">Janoer Koening</h3>
+            <p className="footer-brand">Janoer Koening</p>
             <p className="footer-tagline">{t('footer.tagline')}</p>
             <p className="footer-description">
               {t('footer.description')}
@@ -22,7 +22,7 @@ const Footer = () => {
 
           {/* Explore */}
           <div className="footer-section">
-            <h4 className="footer-title">{t('footer.quickLinks')}</h4>
+            <h2 className="footer-title">{t('footer.quickLinks')}</h2>
             <ul className="footer-links">
               <li><Link to="/">{t('nav.home')}</Link></li>
               <li><Link to="/shop">{t('nav.shop')}</Link></li>
@@ -32,7 +32,7 @@ const Footer = () => {
 
           {/* Account & Orders */}
           <div className="footer-section">
-            <h4 className="footer-title">{t('footer.accountArea')}</h4>
+            <h2 className="footer-title">{t('footer.accountArea')}</h2>
             <ul className="footer-links">
               <li><Link to="/orders">{t('nav.orders')}</Link></li>
               <li><Link to="/order-lookup">{t('footer.trackOrder')}</Link></li>
