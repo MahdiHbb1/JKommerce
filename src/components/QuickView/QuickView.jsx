@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
@@ -11,11 +11,41 @@ import Button from '../ui/Button';
  * Displays a quick preview of a product with add to cart functionality
  */
 
+const COLOR_SWATCHES = [
+  ['black', '#1c1917'],
+  ['navy', '#1e3a5f'],
+  ['indigo', '#2f3e75'],
+  ['blue', '#345a8a'],
+  ['brown', '#8b6f47'],
+  ['soga', '#7a5a35'],
+  ['maroon', '#7f1d1d'],
+  ['red', '#b91c1c'],
+  ['gold', '#d4af37'],
+  ['cream', '#e8d9b5'],
+  ['beige', '#d8c3a5'],
+  ['white', '#faf7f2'],
+  ['grey', '#9ca3af'],
+  ['gray', '#9ca3af'],
+  ['pink', '#d8a7b1'],
+  ['purple', '#8b7aa8'],
+  ['green', '#5f7f5a'],
+  ['mint', '#b7d8c6'],
+];
+
+const getSwatchColor = (name) => {
+  const value = String(name || '').toLowerCase();
+  const match = COLOR_SWATCHES.find(([key]) => value.includes(key));
+  return match ? match[1] : 'var(--color-paper-deep)';
+};
+
 const QuickView = ({ product, onClose }) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const dialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -70,16 +100,51 @@ const QuickView = ({ product, onClose }) => {
     }
   };
 
-  const handleEscapeKey = (e) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  };
-
   useEffect(() => {
+    const handleEscapeKey = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
     document.addEventListener('keydown', handleEscapeKey);
     return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement;
+    const focusTimer = window.setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      const previous = previousFocusRef.current;
+      if (previous && typeof previous.focus === 'function') {
+        previous.focus();
+      }
+    };
   }, []);
+
+  const handleDialogKeyDown = (event) => {
+    if (event.key !== 'Tab') return;
+
+    const focusable = Array.from(
+      dialogRef.current?.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ) || []
+    );
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
 
   if (!product) return null;
 
@@ -92,14 +157,18 @@ const QuickView = ({ product, onClose }) => {
       onClick={handleBackdropClick}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="quickview-title"
-        className="relative w-full max-w-5xl bg-[var(--color-paper-raised)] text-[var(--color-ink)] rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto animate-slide-up"
-        onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
+        className="relative w-full max-w-5xl bg-[var(--color-paper-raised)] text-[var(--color-ink)] rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto animate-scale-in"
+        onKeyDown={handleDialogKeyDown}
       >
         {/* Close Button */}
         <button
+          ref={closeButtonRef}
+          type="button"
           className="absolute top-4 right-4 z-10 w-11 h-11 flex items-center justify-center rounded-full bg-[var(--color-paper-raised)] text-[var(--color-ink)] shadow-md hover:bg-[var(--color-paper-deep)] transition-colors"
           onClick={onClose}
           aria-label={t('common.close')}
@@ -121,10 +190,10 @@ const QuickView = ({ product, onClose }) => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-primary-700 px-6 text-center text-white">
+                <div className="w-full h-full flex items-center justify-center bg-[var(--color-paper-deep)] px-6 text-center text-[var(--color-ink)]">
                   <div>
                     <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-white/70 mt-1">{t('product.noImage')}</p>
+                    <p className="text-sm text-[var(--color-ink-soft)] mt-1">{t('product.noImage')}</p>
                   </div>
                 </div>
               )}
@@ -134,7 +203,7 @@ const QuickView = ({ product, onClose }) => {
                 </span>
               )}
               {product.bestseller && (
-                <span className="absolute top-3 right-3 px-3 py-1 bg-[var(--color-gold-bright)] text-[var(--color-brown-ink)] text-xs font-semibold rounded-full">
+                <span className="absolute bottom-3 right-3 px-3 py-1 bg-[var(--color-gold-bright)] text-[var(--color-brown-ink)] text-xs font-semibold rounded-full">
                   {t('product.bestSeller')}
                 </span>
               )}
@@ -148,8 +217,8 @@ const QuickView = ({ product, onClose }) => {
                     key={index}
                     type="button"
                     className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === index 
-                        ? 'border-[var(--color-brown-ink)] ring-2 ring-[var(--color-gold)] ring-opacity-50' 
+                      selectedImage === index
+                        ? 'border-[var(--color-brown-ink)] ring-2 ring-[var(--color-gold)]'
                         : 'border-[var(--color-line)] hover:border-[var(--color-line-strong)]'
                     }`}
                     onClick={() => setSelectedImage(index)}
@@ -244,17 +313,27 @@ const QuickView = ({ product, onClose }) => {
                     <button
                       key={color}
                       type="button"
-                      className={`w-11 h-11 rounded-full border-2 transition-all ${
-                        selectedColor === color
-                          ? 'border-[var(--color-brown-ink)] ring-2 ring-[var(--color-gold)] ring-opacity-50'
-                          : 'border-[var(--color-line-strong)] hover:border-[var(--color-brown)]'
-                      }`}
+                      className="flex min-h-11 min-w-11 flex-col items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-gold)]"
                       onClick={() => setSelectedColor(color)}
-                      style={{ backgroundColor: color.toLowerCase() }}
-                      title={color}
-                      aria-label={color}
                       aria-pressed={selectedColor === color}
-                    />
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`block h-11 w-11 rounded-full border-2 transition-all ${
+                          selectedColor === color
+                            ? 'border-[var(--color-brown-ink)] ring-2 ring-[var(--color-gold)]'
+                            : 'border-[var(--color-line-strong)]'
+                        }`}
+                        style={{ backgroundColor: getSwatchColor(color) }}
+                      />
+                      <span className={`text-xs leading-tight ${
+                        selectedColor === color
+                          ? 'font-semibold text-[var(--color-brown-ink)]'
+                          : 'text-[var(--color-ink-soft)]'
+                      }`}>
+                        {color}
+                      </span>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -317,7 +396,7 @@ const QuickView = ({ product, onClose }) => {
                 }`}
                 onClick={handleWishlistToggle}
                 aria-pressed={isInWishlist(product.id)}
-                aria-label={isInWishlist(product.id) ? t('wishlist.removeFromWishlist') : t('wishlist.addToWishlist')}
+                aria-label={t('nav.wishlist')}
               >
                 <svg 
                   aria-hidden="true"

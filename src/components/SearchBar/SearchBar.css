@@ -18,7 +18,7 @@
   width: 100%;
   min-height: 44px;
   padding: 10px 52px 10px 14px;
-  border: 1px solid var(--color-line-strong);
+  border: 1px solid var(--color-ink-faint);
   border-radius: var(--radius-xs);
   font-size: 14px;
   font-family: var(--font-body);
@@ -32,7 +32,6 @@
 }
 
 .search-input:focus {
-  outline: none;
   border-color: var(--color-gold);
   box-shadow: 0 0 0 3px rgba(161, 98, 7, 0.14);
 }

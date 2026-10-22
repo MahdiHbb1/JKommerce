@@ -356,7 +356,7 @@ const Shop = () => {
                   id="sort"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2 min-h-11 border border-[var(--color-line-strong)] rounded-[var(--radius-sm)] bg-[var(--color-paper-raised)] text-[var(--color-ink)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)] focus:border-[var(--color-gold)]"
+                  className="px-4 py-2 min-h-11 border border-[var(--color-ink-faint)] rounded-[var(--radius-sm)] bg-[var(--color-paper-raised)] text-[var(--color-ink)] text-sm focus:ring-2 focus:ring-[var(--color-gold)] focus:border-[var(--color-gold)]"
                 >
                   <option value="featured">{t('sort.featured')}</option>
                   <option value="newest">{t('sort.newest')}</option>
