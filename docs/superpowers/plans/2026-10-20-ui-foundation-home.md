@@ -1,6 +1,6 @@
 # Stage 4.5A UI Foundation and Home Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.
 
 **Goal:** Upgrade the storefront shell, icon system, Home, and product card to the approved Heritage Editorial direction without changing catalog, cart, checkout, or order behavior.
 
@@ -43,16 +43,16 @@
 - Consumes: existing React and Vite setup.
 - Produces: CSS variables in `tokens.css`; `Icon({ name, size = 20, weight = 'regular', className, ...props })`; font families `Inter Variable` and `Playfair Display Variable`.
 
-- [ ] **Step 1: Write the failing Icon test**
+- [x] **Step 1: Write the failing Icon test**
 
 Test that `name="search"` renders an SVG with `aria-hidden="true"`, `size={24}` sets width/height, and an unknown name returns no SVG.
 
-- [ ] **Step 2: Run the test and verify it fails**
+- [x] **Step 2: Run the test and verify it fails**
 
 Run: `npx vitest run src/components/ui/__tests__/Icon.test.jsx --maxWorkers=1`
 Expected: FAIL because `Icon.jsx` does not exist.
 
-- [ ] **Step 3: Install dependencies and implement tokens/fonts/Icon**
+- [x] **Step 3: Install dependencies and implement tokens/fonts/Icon**
 
 Run: `npm install @fontsource-variable/inter @fontsource-variable/playfair-display @phosphor-icons/react`
 
@@ -60,12 +60,12 @@ Create `tokens.css` with paper, ink, brown, gold, line, font, radius, shadow, sp
 
 Create `Icon.jsx` as the only icon entry point. Map the functional names used by the shell and cards: `search`, `heart`, `bag`, `menu`, `close`, `user`, `home`, `shop`, `quickView`, `trash`, `plus`, `minus`, `arrowRight`, `check`, `truck`, `shield`, and `imageOff`. Use Phosphor `regular` weight by default, `1.75` stroke feel through the chosen weight, and `aria-hidden`.
 
-- [ ] **Step 4: Run test, lint, and build**
+- [x] **Step 4: Run test, lint, and build**
 
 Run the Icon test; run `npm run lint`; run `npm run build`.
 Expected: Icon test PASS, lint 0 errors, build PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Commit: `feat(ui): add heritage design tokens and icon system`
 
@@ -81,7 +81,7 @@ Commit: `feat(ui): add heritage design tokens and icon system`
 - Consumes: `Icon` from Task 1; `useCart().getTotalItems`; `useWishlist().wishlistCount`; `useTranslation`.
 - Produces: mobile bottom navigation with links `/`, `/shop`, `/wishlist`, `/cart`, `/account`; no new route.
 
-- [ ] **Step 1: Implement the shell**
+- [x] **Step 1: Implement the shell**
 
 Header uses the paper token, a warm border, active desktop nav underline, Phosphor icons, and a visible `Menu` label on mobile. Remove wishlist and cart icons from the mobile header because the bottom nav owns them; keep desktop wishlist/cart. Mobile menu remains for Tentang Kami, Riwayat Pesanan, and language.
 
@@ -89,11 +89,11 @@ Add `MobileBottomNav` fixed at the bottom, `md:hidden`, with five real destinati
 
 Add a skip link in `Layout` and `id="main-content"` on `main`. Add `nav.menu` and `common.skipToContent` translations.
 
-- [ ] **Step 2: Verify behavior**
+- [x] **Step 2: Verify behavior**
 
 Run lint. In the browser at 1360 and 390, verify active nav, menu Escape, bottom nav counts, no horizontal overflow, 44 px targets, and no console/page errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 Commit: `feat(ui): rebuild storefront shell and mobile navigation`
 
@@ -109,7 +109,7 @@ Commit: `feat(ui): rebuild storefront shell and mobile navigation`
 - Consumes: existing `products`, `featuredProducts`, `onAddToCart`, `onQuickView`, `t`, `formatPrice`.
 - Produces: Home with hero, three category links, one brand story block, one motif feature, and one product grid; ProductCard with no nested button inside an anchor.
 
-- [ ] **Step 1: Write the failing ProductCard test**
+- [x] **Step 1: Write the failing ProductCard test**
 
 Mock `useWishlist` and `useTranslation`, render one product inside `MemoryRouter`, and assert:
 - no `a button` exists;
@@ -117,16 +117,16 @@ Mock `useWishlist` and `useTranslation`, render one product inside `MemoryRouter
 - the add-to-cart button has the Indonesian label;
 - no `Karya Pilihan` or `Pilihan Istimewa` badge is rendered without a real curation flag.
 
-- [ ] **Step 2: Run the test and verify it fails**
+- [x] **Step 2: Run the test and verify it fails**
 
 Run: `npx vitest run src/components/ProductCard/__tests__/ProductCard.test.jsx --maxWorkers=1`
 Expected: FAIL on the nested anchor/button structure.
 
-- [ ] **Step 3: Implement ProductCard**
+- [x] **Step 3: Implement ProductCard**
 
 Use an article container. Make only the image and product name links. Put the wishlist and Quick View controls outside the link, always visible at 44 px. Use `Icon`. Make the pattern label a readable neutral badge, keep out-of-stock status, and remove the duplicate green curated badge. Add the add-to-cart action outside the link.
 
-- [ ] **Step 4: Rewrite Home**
+- [x] **Step 4: Rewrite Home**
 
 Use one hero with a real catalog image from the first featured product, falling back to `motif-sogan.jpg` when the catalog is empty. The hero uses paper background, no dark overlay, and a real product caption. Keep the existing Quick View and add-to-cart callbacks.
 
@@ -134,15 +134,15 @@ Use three category links to `/shop?category=...`, one brand story block linking 
 
 Add the new id/en copy keys for the hero, story, motif section, and product section.
 
-- [ ] **Step 5: Rewrite Home.css**
+- [x] **Step 5: Rewrite Home.css**
 
 Use token colors and a fluid type/space scale. Mobile is a designed state: hero stacks, category cards stack, motif feature stacks, product grid becomes one column, and no section uses `100vh`. Add only purposeful hover and reveal motion, guarded by the existing reduced-motion global rule.
 
-- [ ] **Step 6: Run test, lint, build, and browser flow**
+- [x] **Step 6: Run test, lint, build, and browser flow**
 
 Verify Home at 1360 and 390: hero image loaded from the catalog, CTA to Shop, category links, story link, product add-to-cart, Quick View, wishlist, search, no overflow, 0 console/page errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 Commit: `feat(ui): rebuild home and product card for heritage editorial`
 
@@ -154,20 +154,40 @@ Commit: `feat(ui): rebuild home and product card for heritage editorial`
 - Modify: `docs/runbook/stage-0-1-acceptance.md`
 - Modify: `.superpowers/sdd/2026-10-19-stage-0-1-foundation-catalog-orders/progress.md`
 
-- [ ] **Step 1: Run verification**
+- [x] **Step 1: Run verification**
 
 Run Icon and ProductCard tests, the existing Shop/ProductDetail/Checkout/OrderHistory tests, lint, and build. Record exact results.
 
 Run Playwright at 1360 and 390: Home, Shop, Product Detail, Cart, Quick View, search, wishlist, mobile menu, bottom nav, footer. Capture screenshots and console/page errors.
 
-- [ ] **Step 2: Run the antislop Delivery Gate**
+- [x] **Step 2: Run the antislop Delivery Gate**
 
 Check Hard Gate, Purpose Gate, Liveliness, and Craftsmanship. Record PASS/FAIL with evidence. Do not mark go-live ready; checkout remains blocked by missing shipping zones and undeployed functions.
 
-- [ ] **Step 3: Update docs and commit**
+- [x] **Step 3: Update docs and commit**
 
 Commit: `docs: record UI foundation and home delivery evidence`
 
-- [ ] **Step 4: Push the branch and let PR #1 update**
+- [x] **Step 4: Push the branch and let PR #1 update**
 
 Push only after the local gate passes. Do not merge.
+
+---
+
+## Completion Evidence (22 Oct 2026)
+
+Status: **COMPLETE for review**. This is not a go-live claim.
+
+- Task 1: `8dd3d2d`, fixes `801addd`, `bd17003`; task review clean.
+- Task 2: `88b754c`, fix `b2260bc`; review APPROVED; browser gate 37/37.
+- Task 3: `bb5aa49`, fix `ba950e6`; scoped re-review CLEAN; browser gate 31/31.
+- Bilingual cleanup (unplanned, justified by the Task 4 gate): `59e4685`, fixes `23c0411`, `54bed99`; review APPROVED.
+- Final polish: `8a86d26` (QuickView 44px controls and localized labels, search/footer heritage styling, localized Shop metadata, Indonesian static metadata).
+- Independent review of `8a86d26`: **APPROVED**, no Critical/Important. Review nits closed in `6a08119`: focus moves into QuickView, is trapped, and returns to the trigger; color swatches have real fills and visible labels; wishlist toggle keeps a stable accessible name; the dead slide animation was replaced; search/select focus outlines were restored; the search boundary uses the 5.13:1 ink-faint token; the mobile bestseller badge no longer overlaps the close button.
+- Tests: 14 files / 77 tests PASS in 85.23s with `pool: 'threads'` before the review fix; full post-fix rerun PASS 14 files / 77 tests in 328.40s with `--pool=forks --maxWorkers=1` under low-memory conditions. The config remains on threads for normal/CI runs.
+- Lint: 0 errors / 55 warnings. Build: PASS in 15.97s before the review fix and PASS in 46.86s after `6a08119` under memory pressure.
+- Browser Delivery Gate: 57/57 PASS at 1360x1000 and 390x844; 0 console errors, 0 page errors, 0 horizontal overflow.
+- QuickView/search/footer polish audit: 18/18 PASS at both viewports, including focus trap, focus return, labeled swatches, and the 5.13:1 search boundary.
+- Antislop Delivery Gate: PASS for the Heritage UI scope. Local report: `.superpowers/sdd/2026-10-20-ui-foundation-home/delivery-gate-report.md`.
+- Production: NO-GO. Checkout remains intentionally blocked while `shipping_zones` is empty; Edge Functions are not deployed; Cloudflare Pages and the domain are not live.
+- Scope exceptions: legacy About/NotFound/CheckoutFailed visual systems and Account's legacy Button remain outside this plan; the warm-paper theme is intentionally fixed (no dark toggle); no real screen-reader pass has been performed.
