@@ -1,14 +1,37 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import products from '../../data/products';
+import fallbackProducts from '../../data/products';
+import { fetchProducts } from '../../lib/db/catalog';
+import { toCardProduct } from '../../lib/db/presenters';
+import { useTranslation } from '../../hooks/useTranslation';
 import './SearchBar.css';
 
 const SearchBar = ({ isMobile, onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
+  const [catalog, setCatalog] = useState(fallbackProducts);
   const searchRef = useRef(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    let active = true;
+
+    fetchProducts()
+      .then((products) => {
+        if (active) {
+          setCatalog(products.map(toCardProduct));
+        }
+      })
+      .catch(() => {
+        // Keep the local seed as an offline fallback for suggestions.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -25,12 +48,11 @@ const SearchBar = ({ isMobile, onClose }) => {
   // Search products
   useEffect(() => {
     if (searchTerm.trim().length > 0) {
-      const filtered = products.filter(product => 
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.technique.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchTerm.toLowerCase())
-      ).slice(0, 5); // Limit to 5 results
+      const query = searchTerm.toLowerCase();
+      const filtered = catalog.filter((product) => (
+        [product.name, product.category, product.technique, product.description, product.pattern]
+          .some((value) => typeof value === 'string' && value.toLowerCase().includes(query))
+      )).slice(0, 5); // Limit to 5 results
 
       setSearchResults(filtered);
       setShowResults(true);
@@ -38,7 +60,7 @@ const SearchBar = ({ isMobile, onClose }) => {
       setSearchResults([]);
       setShowResults(false);
     }
-  }, [searchTerm]);
+  }, [searchTerm, catalog]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -50,8 +72,8 @@ const SearchBar = ({ isMobile, onClose }) => {
     }
   };
 
-  const handleProductClick = (productId) => {
-    navigate(`/product/${productId}`);
+  const handleProductClick = (product) => {
+    navigate(`/product/${product.slug || product.id}`);
     setShowResults(false);
     setSearchTerm('');
     if (onClose) onClose();
@@ -73,14 +95,14 @@ const SearchBar = ({ isMobile, onClose }) => {
           type="text"
           id="search-batik"
           name="search"
-          placeholder="Search batik products..."
+          placeholder={t('search.placeholder')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
           autoComplete="off"
-          aria-label="Search batik products"
+          aria-label={t('search.placeholder')}
         />
-        <button type="submit" className="search-button" aria-label="Search">
+        <button type="submit" className="search-button" aria-label={t('common.search')}>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -94,13 +116,28 @@ const SearchBar = ({ isMobile, onClose }) => {
               <div 
                 key={product.id}
                 className="search-result-item"
-                onClick={() => handleProductClick(product.id)}
+                role="button"
+                tabIndex={0}
+                aria-label={product.name}
+                onClick={() => handleProductClick(product)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleProductClick(product);
+                  }
+                }}
               >
-                <img src={product.images?.[0] || product.image} alt={product.name} className="result-image" />
+                {product.images?.[0] || product.image ? (
+                  <img src={product.images?.[0] || product.image} alt={product.name} className="result-image" />
+                ) : (
+                  <span className="result-image result-image-placeholder">{t('product.noImage')}</span>
+                )}
                 <div className="result-info">
                   <h4 className="result-name">{product.name}</h4>
-                  <p className="result-category">{product.category} · {product.technique}</p>
-                  <p className="result-price">Rp {product.price.toLocaleString('id-ID')}</p>
+                  <p className="result-category">
+                    {[product.category, product.technique].filter(Boolean).join(' · ')}
+                  </p>
+                  <p className="result-price">Rp {Number(product.price || 0).toLocaleString('id-ID')}</p>
                 </div>
               </div>
             ))}
@@ -110,7 +147,7 @@ const SearchBar = ({ isMobile, onClose }) => {
               className="view-all-button"
               onClick={handleViewAllResults}
             >
-              View all results for "{searchTerm}"
+              {t('search.viewAll', { term: searchTerm })}
             </button>
           )}
         </div>
@@ -119,8 +156,8 @@ const SearchBar = ({ isMobile, onClose }) => {
       {showResults && searchTerm.trim() && searchResults.length === 0 && (
         <div className="search-results">
           <div className="no-results">
-            <p>No products found for "{searchTerm}"</p>
-            <button onClick={() => navigate('/shop')}>Browse all products</button>
+            <p>{t('search.noResultsFor', { term: searchTerm })}</p>
+            <button onClick={() => navigate('/shop')}>{t('search.browseAll')}</button>
           </div>
         </div>
       )}

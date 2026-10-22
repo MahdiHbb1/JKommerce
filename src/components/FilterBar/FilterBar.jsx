@@ -128,7 +128,7 @@ const FilterBar = ({
               autoComplete="off"
               aria-label="Minimum price"
             />
-            <span className="price-separator">—</span>
+            <span className="price-separator">s.d.</span>
             <input
               type="number"
               id="price-max"

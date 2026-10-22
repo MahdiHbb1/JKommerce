@@ -95,7 +95,6 @@
 }
 
 .filter-select:focus {
-  outline: none;
   border-color: var(--accent-gold);
   box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
 }
@@ -150,7 +149,6 @@
 }
 
 .price-input:focus {
-  outline: none;
   border-color: var(--accent-gold);
   box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
 }

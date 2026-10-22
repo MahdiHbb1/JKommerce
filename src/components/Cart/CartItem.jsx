@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import Button from '../ui/Button';
+import { useTranslation } from '../../hooks/useTranslation';
 
 /**
  * CartItem Component
@@ -9,6 +9,8 @@ import Button from '../ui/Button';
 
 const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
   const { id, name, price, image, size, color, quantity } = item;
+  const [imageError, setImageError] = useState(false);
+  const { t } = useTranslation();
   const maxQuantity = Number.isFinite(item.stock) && item.stock > 0 ? item.stock : 10;
 
   const handleDecrease = () => {
@@ -60,11 +62,18 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
     <div className="flex gap-4 py-4 border-b border-neutral-200 last:border-b-0">
       {/* Product Image */}
       <div className="flex-shrink-0">
-        <img
-          src={image}
-          alt={name}
-          className="w-20 h-20 object-cover rounded-lg"
-        />
+        {image && !imageError ? (
+          <img
+            src={image}
+            alt={name}
+            className="w-20 h-20 object-cover rounded-lg"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="w-20 h-20 rounded-lg bg-primary-700 text-white flex items-center justify-center p-2 text-center text-[10px] leading-tight">
+            {t('product.noImage')}
+          </div>
+        )}
       </div>
 
       {/* Product Details */}
@@ -78,13 +87,13 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
         <div className="flex gap-3 text-xs text-neutral-600 mb-2">
           {size && (
             <span className="flex items-center gap-1">
-              <span className="font-medium">Size:</span>
+              <span className="font-medium">{t('product.size')}:</span>
               <span>{size}</span>
             </span>
           )}
           {color && (
             <span className="flex items-center gap-1">
-              <span className="font-medium">Color:</span>
+              <span className="font-medium">{t('product.color')}:</span>
               <span>{color}</span>
             </span>
           )}
@@ -103,8 +112,8 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
             <button
               onClick={handleDecrease}
               disabled={quantity <= 1}
-              className="px-3 py-1 bg-neutral-50 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              aria-label="Decrease quantity"
+              className="min-w-11 min-h-11 px-3 py-2 bg-neutral-50 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+              aria-label={t('cart.decreaseQuantity')}
             >
               <span className="text-lg font-semibold text-neutral-600">−</span>
             </button>
@@ -118,16 +127,16 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
               max={maxQuantity}
               value={quantity}
               onChange={handleQuantityChange}
-              className="w-12 text-center border-x border-neutral-300 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500"
-              aria-label={`Quantity for ${name}`}
+              className="w-12 text-center border-x border-neutral-300 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500"
+              aria-label={t('cart.quantityFor', { name })}
             />
 
             {/* Increase Button */}
             <button
               onClick={handleIncrease}
               disabled={quantity >= maxQuantity}
-              className="px-3 py-1 bg-neutral-50 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              aria-label="Increase quantity"
+              className="min-w-11 min-h-11 px-3 py-2 bg-neutral-50 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+              aria-label={t('cart.increaseQuantity')}
             >
               <span className="text-lg font-semibold text-neutral-600">+</span>
             </button>
@@ -136,11 +145,11 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
           {/* Remove Button */}
           <button
             onClick={() => onRemove(id)}
-            className="flex items-center gap-1 px-2 py-1 text-red-600 hover:bg-red-50 rounded-md transition-colors text-xs font-medium"
-            aria-label="Remove item"
+            className="min-h-11 flex items-center gap-1 px-2 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors text-xs font-medium"
+            aria-label={t('cart.removeItem')}
           >
             <TrashIcon />
-            <span>Remove</span>
+            <span>{t('cart.remove')}</span>
           </button>
         </div>
       </div>

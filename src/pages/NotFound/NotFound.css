@@ -33,7 +33,7 @@
 }
 
 .not-found-text h1 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 3rem;
   color: var(--primary-navy);
   margin: 0 0 16px 0;
@@ -65,7 +65,7 @@
   gap: 10px;
   padding: 14px 28px;
   border-radius: 8px;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   font-weight: 500;
   text-decoration: none;

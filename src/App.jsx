@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
+import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 import './App.css';
 
 const Home = lazy(() => import('./pages/Home/Home'));
@@ -8,6 +9,8 @@ const Shop = lazy(() => import('./pages/Shop/Shop'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail/ProductDetail'));
 const Cart = lazy(() => import('./pages/Cart/Cart'));
 const Checkout = lazy(() => import('./pages/Checkout/Checkout'));
+const OrderReceived = lazy(() => import('./pages/OrderReceived/OrderReceived'));
+const CheckoutFailed = lazy(() => import('./pages/CheckoutFailed/CheckoutFailed'));
 const About = lazy(() => import('./pages/About/About'));
 const Wishlist = lazy(() => import('./pages/Wishlist/Wishlist'));
 const OrderHistory = lazy(() => import('./pages/OrderHistory/OrderHistory'));
@@ -18,6 +21,7 @@ const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 function App() {
   return (
     <Layout>
+      <ScrollToTop />
       <Suspense fallback={<div className="route-loading">Loading page...</div>}>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -25,6 +29,8 @@ function App() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/order-received" element={<OrderReceived />} />
+          <Route path="/checkout/failed" element={<CheckoutFailed />} />
           <Route path="/about" element={<About />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/orders" element={<OrderHistory />} />

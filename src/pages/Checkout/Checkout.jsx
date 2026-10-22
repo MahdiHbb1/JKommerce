@@ -1,860 +1,879 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useOrders } from '../../context/OrderContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import Button from '../../components/Button/Button';
-import { formatPrice } from '../../data/products';
 import PageMeta from '../../components/Seo/PageMeta';
+import {
+  fetchPublicSettings,
+  fetchShippingZones,
+} from '../../lib/db/catalog.js';
+import { computeTotals } from '../../../supabase/functions/_shared/pricing';
 import './Checkout.css';
+
+// Versi kata persetujuan checkout. Ganti dengan versi dokumen legal yang
+// terbit saat halaman Syarat & Ketentuan/Kebijakan Privasi tersedia.
+const CONSENT_VERSION = '2026-10-19';
+
+const EMPTY_SHIPPING_INFO = {
+  fullName: '',
+  email: '',
+  phone: '',
+  address: '',
+  city: '',
+  province: '',
+  postalCode: '',
+};
+
+const createIdempotencyKey = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `jk-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
+const resolveLegalVersion = (value) =>
+  typeof value === 'string' && value.trim() ? value.trim() : CONSENT_VERSION;
+
+const unitPriceOf = (item) => Number(item.price ?? item.price_idr ?? 0);
+
+const scrollToCheckoutTop = () => {
+  if (typeof window !== 'undefined') {
+    window.scrollTo(0, 0);
+  }
+};
+
+const FieldError = ({ id, message }) =>
+  message ? (
+    <span className="field-error" id={id}>
+      {message}
+    </span>
+  ) : null;
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cart, getTotalPrice, clearCart } = useCart();
-  const { addOrder } = useOrders();
+  const { cart, clearCart } = useCart();
+  const { createOrder } = useOrders();
   const { t, formatCurrency } = useTranslation();
+
   const [currentStep, setCurrentStep] = useState(1);
-  const [orderConfirmed, setOrderConfirmed] = useState(false);
-  const [orderNumber, setOrderNumber] = useState('');
-  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
-  const [isSnapReady, setIsSnapReady] = useState(false);
-  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
-  const [gatewayMessage, setGatewayMessage] = useState('');
-  const [shippingCost, setShippingCost] = useState(25000);
-  const [isShippingQuoteLoading, setIsShippingQuoteLoading] = useState(false);
-  const [shippingQuoteMessage, setShippingQuoteMessage] = useState('');
-  const [voucherCode, setVoucherCode] = useState('');
-  const [appliedVoucher, setAppliedVoucher] = useState(null);
-  const [voucherMessage, setVoucherMessage] = useState('');
-  const whatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER;
-
-  // Form states
-  const [shippingInfo, setShippingInfo] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    province: '',
-    postalCode: ''
-  });
-
-  const [paymentMethod, setPaymentMethod] = useState('midtrans-snap');
+  const [loadState, setLoadState] = useState('loading');
+  const [retryToken, setRetryToken] = useState(0);
+  const [zones, setZones] = useState([]);
+  const [settings, setSettings] = useState(null);
+  const [shippingInfo, setShippingInfo] = useState(EMPTY_SHIPPING_INFO);
   const [formErrors, setFormErrors] = useState({});
+  const [consent, setConsent] = useState({ tos: false, privacy: false });
+  const [submitError, setSubmitError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
 
-  // Redirect if cart is empty (but not after order is confirmed)
+  const idempotencyKeyRef = useRef('');
+  const submittedRef = useRef(false);
+
   useEffect(() => {
-    if (cart && cart.length === 0 && !orderConfirmed) {
-      navigate('/cart');
-    }
-  }, [cart, navigate, orderConfirmed]);
+    let cancelled = false;
 
-  // Calculate totals (with safe defaults)
-  const subtotal = cart ? getTotalPrice() : 0;
-  const taxRate = 0.11; // 11% PPN
-  const tax = subtotal * taxRate;
-  const summaryItemCount = cart ? cart.reduce((count, item) => count + item.quantity, 0) : 0;
-  const midtransClientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
-  const midtransTokenEndpoint = import.meta.env.VITE_MIDTRANS_TOKEN_ENDPOINT;
-  const midtransSnapUrl = import.meta.env.VITE_MIDTRANS_SNAP_URL || 'https://app.sandbox.midtrans.com/snap/snap.js';
-  const shippingQuoteEndpoint = import.meta.env.VITE_SHIPPING_QUOTE_ENDPOINT;
-  const isMidtransConfigured = Boolean(midtransClientKey && midtransTokenEndpoint);
-  const isShippingQuoteConfigured = Boolean(shippingQuoteEndpoint);
-  const voucherCatalog = {
-    BATIK10: { type: 'percent', value: 10 },
-    JKM50: { type: 'fixed', value: 50000 },
-    HEMAT25: { type: 'fixed', value: 25000 }
-  };
+    setLoadState('loading');
+    setSubmitError('');
 
-  const discountAmount = appliedVoucher
-    ? appliedVoucher.type === 'percent'
-      ? Math.round(subtotal * (appliedVoucher.value / 100))
-      : appliedVoucher.value
-    : 0;
-  const total = Math.max(subtotal + tax + shippingCost - discountAmount, 0);
-
-  const generateOrderNumber = () => {
-    const randomSource = typeof crypto !== 'undefined' ? crypto : window.crypto;
-
-    if (randomSource?.randomUUID) {
-      return `JK-${randomSource.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
-    }
-
-    if (randomSource?.getRandomValues) {
-      const values = new Uint8Array(8);
-      randomSource.getRandomValues(values);
-      return `JK-${Array.from(values, (value) => value.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
-    }
-
-    return `JK-${Date.now().toString(36).toUpperCase()}`;
-  };
-
-  const buildOrderPayload = (orderNum) => ({
-    order_id: orderNum,
-    gross_amount: Math.round(total),
-    currency: 'IDR',
-    customer_details: {
-      first_name: shippingInfo.fullName,
-      email: shippingInfo.email,
-      phone: shippingInfo.phone,
-      shipping_address: shippingInfo.address,
-      city: shippingInfo.city,
-      province: shippingInfo.province,
-      postal_code: shippingInfo.postalCode
-    },
-    item_details: (cart || []).map((item) => ({
-      id: String(item.id),
-      price: Math.round(item.price),
-      quantity: item.quantity,
-      name: item.name.slice(0, 50)
-    }))
-  });
-
-  const loadSnapScript = () => {
-    if (window.snap) {
-      setIsSnapReady(true);
-      return Promise.resolve();
-    }
-
-    const existingScript = document.querySelector('script[data-midtrans-snap="true"]');
-    if (existingScript) {
-      return new Promise((resolve, reject) => {
-        if (window.snap) {
-          setIsSnapReady(true);
-          resolve();
+    Promise.all([fetchShippingZones(), fetchPublicSettings()])
+      .then(([zoneRows, publicSettings]) => {
+        if (cancelled) {
           return;
         }
 
-        existingScript.addEventListener('load', () => {
-          setIsSnapReady(true);
-          resolve();
-        }, { once: true });
-        existingScript.addEventListener('error', () => reject(new Error('Failed to load Snap.js')), { once: true });
+        const mode = publicSettings?.tax?.mode;
+        const rate = publicSettings?.tax?.rate_percent;
+        const taxValid =
+          ['included', 'excluded', 'none'].includes(mode) &&
+          typeof rate === 'number' &&
+          Number.isFinite(rate) &&
+          rate >= 0 &&
+          rate <= 100;
+
+        if (!taxValid) {
+          throw new Error('settings_invalid');
+        }
+
+        setZones(Array.isArray(zoneRows) ? zoneRows : []);
+        setSettings(publicSettings);
+        setLoadState('ready');
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+        console.error('Checkout: gagal memuat pengaturan toko', error);
+        setLoadState('error');
       });
-    }
 
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = midtransSnapUrl;
-      script.async = true;
-      script.setAttribute('data-midtrans-snap', 'true');
-      if (midtransClientKey) {
-        script.setAttribute('data-client-key', midtransClientKey);
-      }
-      script.onload = () => {
-        setIsSnapReady(true);
-        resolve();
-      };
-      script.onerror = () => reject(new Error('Failed to load Snap.js'));
-      document.head.appendChild(script);
-    });
-  };
-
-  const requestSnapToken = async (orderNum) => {
-    const response = await fetch(midtransTokenEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(buildOrderPayload(orderNum))
-    });
-
-    if (!response.ok) {
-      throw new Error('Token endpoint rejected the request');
-    }
-
-    const data = await response.json();
-    if (!data?.token) {
-      throw new Error('Midtrans token not returned');
-    }
-
-    return data.token;
-  };
-
-  const finalizePaidOrder = (orderNum, paymentState = 'processing') => {
-    const orderData = {
-      orderNumber: orderNum,
-      items: cart,
-      shippingInfo,
-      paymentMethod: 'midtrans-snap',
-      subtotal,
-      tax,
-      shipping: shippingCost,
-      discountCode: appliedVoucher ? appliedVoucher.code : null,
-      discountAmount,
-      total,
-      orderDate: Date.now(),
-      status: paymentState
+    return () => {
+      cancelled = true;
     };
-
-    addOrder(orderData);
-    setOrderNumber(orderNum);
-    setOrderConfirmed(true);
-
-    setTimeout(() => {
-      clearCart();
-    }, 500);
-  };
-
-  const resolveShippingCost = async () => {
-    if (!isShippingQuoteConfigured) {
-      setShippingCost(25000);
-      setShippingQuoteMessage(t('checkout.shippingQuoteFallback'));
-      return;
-    }
-
-    setIsShippingQuoteLoading(true);
-    setShippingQuoteMessage('');
-
-    try {
-      const response = await fetch(shippingQuoteEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          destination_city: shippingInfo.city,
-          destination_province: shippingInfo.province,
-          postal_code: shippingInfo.postalCode,
-          subtotal
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Shipping quote request failed');
-      }
-
-      const data = await response.json();
-      const quotedCost = Number(data?.shippingCost ?? data?.cost ?? data?.price);
-
-      if (!Number.isFinite(quotedCost) || quotedCost < 0) {
-        throw new Error('Shipping quote response was invalid');
-      }
-
-      setShippingCost(quotedCost);
-      setShippingQuoteMessage(t('checkout.shippingQuoteReady'));
-    } catch (error) {
-      setShippingCost(25000);
-      setShippingQuoteMessage(t('checkout.shippingQuoteUnavailable'));
-    } finally {
-      setIsShippingQuoteLoading(false);
-    }
-  };
+  }, [retryToken]);
 
   useEffect(() => {
-    if (currentStep === 2 && isMidtransConfigured) {
-      loadSnapScript().catch(() => {
-        setGatewayMessage(t('checkout.snapUnavailable'));
-      });
+    if (cart.length === 0 && !submittedRef.current) {
+      navigate('/cart');
     }
-  }, [currentStep, isMidtransConfigured]);
+  }, [cart.length, navigate]);
 
-  // Validate shipping form
+  const provinceOptions = useMemo(() => {
+    const provinceMap = new Map();
+
+    zones.forEach((zone) => {
+      const provinces = Array.isArray(zone.provinces) ? zone.provinces : [];
+      provinces.forEach((province) => {
+        if (
+          typeof province === 'string' &&
+          province.trim() &&
+          !provinceMap.has(province)
+        ) {
+          provinceMap.set(province, zone);
+        }
+      });
+    });
+
+    return Array.from(provinceMap, ([province, zone]) => ({
+      province,
+      zone,
+    }));
+  }, [zones]);
+
+  const selectedOption =
+    provinceOptions.find(
+      (option) => option.province === shippingInfo.province,
+    ) || null;
+  const selectedZone = selectedOption?.zone || null;
+  const hasZones = provinceOptions.length > 0;
+  const taxMode = settings?.tax?.mode || 'included';
+  const taxRate = settings?.tax?.rate_percent ?? 0;
+
+  const subtotal = cart.reduce(
+    (sum, item) => sum + unitPriceOf(item) * Number(item.quantity),
+    0,
+  );
+  const itemCount = cart.reduce((sum, item) => sum + Number(item.quantity), 0);
+
+  let totals = null;
+  if (selectedZone && cart.length > 0) {
+    try {
+      totals = computeTotals({
+        lines: cart.map((item) => ({
+          qty: Number(item.quantity),
+          unit_price_idr: unitPriceOf(item),
+        })),
+        shipping_idr: selectedZone.rate_idr,
+        discount_idr: 0,
+        tax: { mode: taxMode, rate_percent: taxRate },
+      });
+    } catch (totalsError) {
+      console.error('Checkout: total tidak dapat dihitung', totalsError);
+      totals = null;
+    }
+  }
+
+  const canSubmit =
+    loadState === 'ready' &&
+    hasZones &&
+    Boolean(totals) &&
+    consent.tos &&
+    consent.privacy &&
+    !isSubmitting;
+
+  const handleFieldChange = (event) => {
+    const { name, value } = event.target;
+    setShippingInfo((previous) => ({ ...previous, [name]: value }));
+    setFormErrors((previous) => ({ ...previous, [name]: '' }));
+  };
+
+  const handleConsentChange = (event) => {
+    const { name, checked } = event.target;
+    setConsent((previous) => ({ ...previous, [name]: checked }));
+  };
+
   const validateShippingInfo = () => {
     const errors = {};
-    
-    if (!shippingInfo.fullName.trim()) errors.fullName = t('validation.required');
-    if (!shippingInfo.email.trim()) {
-      errors.email = t('validation.emailRequired');
-    } else if (!/\S+@\S+\.\S+/.test(shippingInfo.email)) {
+    const fullName = shippingInfo.fullName.trim();
+    const email = shippingInfo.email.trim();
+    const phone = shippingInfo.phone.trim();
+    const address = shippingInfo.address.trim();
+    const city = shippingInfo.city.trim();
+    const postalCode = shippingInfo.postalCode.trim();
+
+    if (fullName.length < 2) {
+      errors.fullName = t('validation.required');
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
       errors.email = t('validation.emailInvalid');
     }
-    if (!shippingInfo.phone.trim()) {
-      errors.phone = t('validation.required');
-    } else if (!/^[0-9]{10,13}$/.test(shippingInfo.phone.replace(/[-\s]/g, ''))) {
+    if (!/^[+]?[\d\s-]{9,18}$/.test(phone)) {
       errors.phone = t('validation.invalidPhone');
     }
-    if (!shippingInfo.address.trim()) errors.address = t('validation.required');
-    if (!shippingInfo.city.trim()) errors.city = t('validation.required');
-    if (!shippingInfo.province.trim()) errors.province = t('validation.required');
-    if (!shippingInfo.postalCode.trim()) {
-      errors.postalCode = t('validation.required');
-    } else if (!/^[0-9]{5}$/.test(shippingInfo.postalCode)) {
-      errors.postalCode = 'Kode pos harus 5 digit';
+    if (address.length < 10) {
+      errors.address = t('validation.addressTooShort');
+    }
+    if (city.length < 2) {
+      errors.city = t('validation.required');
+    }
+    if (!selectedOption) {
+      errors.province = t('validation.provinceUnavailable');
+    }
+    if (!/^\d{5}$/.test(postalCode)) {
+      errors.postalCode = t('validation.postalCode');
     }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // Handle input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setShippingInfo(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Clear error for this field
-    if (formErrors[name]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+  const handleContinue = (event) => {
+    event.preventDefault();
+
+    if (loadState !== 'ready' || !hasZones) {
+      return;
     }
-  };
-
-  // Navigate to next step
-  const handleNextStep = async () => {
-    if (currentStep === 1) {
-      if (validateShippingInfo()) {
-        await resolveShippingCost();
-        setCurrentStep(2);
-      }
-    } else if (currentStep === 2) {
-      setCurrentStep(3);
-    }
-  };
-
-  const handleApplyVoucher = () => {
-    const normalizedCode = voucherCode.trim().toUpperCase();
-    const matchedVoucher = voucherCatalog[normalizedCode];
-
-    if (!matchedVoucher) {
-      setAppliedVoucher(null);
-      setVoucherMessage(t('checkout.invalidVoucher'));
+    if (!validateShippingInfo()) {
       return;
     }
 
-    setAppliedVoucher({ code: normalizedCode, ...matchedVoucher });
-    setVoucherMessage(t('checkout.voucherApplied', { code: normalizedCode }));
-  };
-
-  const handleRemoveVoucher = () => {
-    setVoucherCode('');
-    setAppliedVoucher(null);
-    setVoucherMessage('');
-  };
-
-  const buildWhatsAppMessage = (referenceNumber) => {
-    const lines = [
-      'Halo, saya ingin memesan batik melalui WhatsApp.',
-      `Referensi: ${referenceNumber}`,
-      '',
-      'Ringkasan pesanan:'
-    ];
-
-    (cart || []).forEach((item) => {
-      const variantParts = [];
-      if (item.selectedSize) variantParts.push(`Size ${item.selectedSize}`);
-      if (item.selectedColor) variantParts.push(`Color ${item.selectedColor}`);
-
-      lines.push(`- ${item.name} x ${item.quantity}${variantParts.length ? ` (${variantParts.join(', ')})` : ''}`);
-    });
-
-    lines.push(
-      '',
-      `Subtotal: ${formatPrice(subtotal)}`,
-      `Pajak: ${formatPrice(tax)}`,
-      `Ongkir: ${shippingCost === 0 ? t('cart.freeShipping') : formatPrice(shippingCost)}`
-    );
-
-    if (discountAmount > 0) {
-      lines.push(`Diskon: -${formatPrice(discountAmount)}`);
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current = createIdempotencyKey();
     }
-
-    lines.push(`Total: ${formatPrice(total)}`);
-    lines.push('', `Nama: ${shippingInfo.fullName}`, `Email: ${shippingInfo.email}`, `Phone: ${shippingInfo.phone}`);
-
-    return lines.join('\n');
+    setSubmitError('');
+    setCurrentStep(2);
+    scrollToCheckoutTop();
   };
 
-  const handleWhatsAppFallback = () => {
-    if (!whatsappNumber) {
-      setGatewayMessage(t('checkout.whatsappUnavailable'));
-      return;
+  const handleEditAddress = () => {
+    idempotencyKeyRef.current = '';
+    setSubmitError('');
+    setCurrentStep(1);
+    scrollToCheckoutTop();
+  };
+
+  const submitErrorMessage = (error) => {
+    if (error?.code === 'insufficient_stock' || error?.status === 409) {
+      return t('checkout.errorStock');
     }
-
-    const referenceNumber = orderNumber || generateOrderNumber();
-    const encodedMessage = encodeURIComponent(buildWhatsAppMessage(referenceNumber));
-    const normalizedNumber = whatsappNumber.replace(/[^\d]/g, '');
-    const whatsappUrl = `https://wa.me/${normalizedNumber}?text=${encodedMessage}`;
-
-    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    if (error?.code === 'shipping_unavailable') {
+      return t('checkout.errorShipping');
+    }
+    if (error?.code === 'validation_failed') {
+      return t('checkout.errorValidation');
+    }
+    if (error?.code === 'rate_limited' || error?.status === 429) {
+      return t('checkout.errorRate');
+    }
+    if (error?.code === 'network_error') {
+      return t('checkout.errorNetwork');
+    }
+    if (error?.code === 'supabase_not_configured') {
+      return t('checkout.errorConfig');
+    }
+    return t('checkout.errorGeneric');
   };
 
-  // Handle order submission
   const handlePlaceOrder = async () => {
-    if (!isMidtransConfigured) {
-      setGatewayMessage(t('checkout.snapUnavailable'));
+    if (!canSubmit) {
       return;
     }
+
+    const missingVariant = cart.find((item) => !item.variantId);
+    if (missingVariant) {
+      setSubmitError(t('checkout.errorVariantMissing'));
+      return;
+    }
+
+    const legal = settings?.legal || {};
+    const payload = {
+      items: cart.map((item) => ({
+        variant_id: item.variantId,
+        qty: Number(item.quantity),
+      })),
+      customer: {
+        name: shippingInfo.fullName.trim(),
+        email: shippingInfo.email.trim(),
+        phone: shippingInfo.phone.trim(),
+      },
+      address: {
+        recipient: shippingInfo.fullName.trim(),
+        phone: shippingInfo.phone.trim(),
+        full_address: shippingInfo.address.trim(),
+        city: shippingInfo.city.trim(),
+        province: shippingInfo.province,
+        postal_code: shippingInfo.postalCode.trim(),
+        country: 'ID',
+      },
+      payment_preference: 'manual',
+      accepts: {
+        tos: true,
+        privacy: true,
+        versions: {
+          tos: resolveLegalVersion(legal.tos_version),
+          privacy: resolveLegalVersion(legal.privacy_version),
+        },
+      },
+      idempotency_key: idempotencyKeyRef.current,
+    };
+
+    const orderItemsSnapshot = cart.map((item) => ({
+      name: item.name,
+      qty: Number(item.quantity),
+      unit_price_idr: unitPriceOf(item),
+      size: item.selectedSize || null,
+      color: item.selectedColor || null,
+    }));
+
+    setIsSubmitting(true);
+    setSubmitError('');
 
     try {
-      setIsSubmittingPayment(true);
-      setGatewayMessage('');
-      await loadSnapScript();
-
-      const orderNum = generateOrderNumber();
-      const token = await requestSnapToken(orderNum);
-
-      if (!window.snap?.pay) {
-        throw new Error('Snap.js is not available');
-      }
-
-      window.snap.pay(token, {
-        onSuccess: () => finalizePaidOrder(orderNum, 'paid'),
-        onPending: () => finalizePaidOrder(orderNum, 'pending'),
-        onError: () => setGatewayMessage(t('common.error')),
-        onClose: () => setGatewayMessage(t('checkout.snapIntegrationNote'))
+      const createdOrder = await createOrder(payload);
+      submittedRef.current = true;
+      clearCart();
+      navigate('/order-received', {
+        state: {
+          order: createdOrder,
+          items: orderItemsSnapshot,
+          email: payload.customer.email,
+        },
       });
     } catch (error) {
-      setGatewayMessage(error instanceof Error ? error.message : t('common.error'));
+      console.error('Checkout: create-order gagal', error);
+      setSubmitError(submitErrorMessage(error));
     } finally {
-      setIsSubmittingPayment(false);
+      setIsSubmitting(false);
     }
   };
 
-  // Helper function for payment method names
-  const getPaymentMethodName = (method) => {
-    const methods = {
-      'midtrans-snap': t('checkout.midtransSnap')
-    };
-    return methods[method] || method;
-  };
-
-  // Render payment instructions based on selected method
-  const renderPaymentInstructions = () => {
-    switch (paymentMethod) {
-      case 'midtrans-snap':
-        return (
-          <div className="instructions-content">
-            <p>{t('checkout.snapIntegrationNote')}</p>
+  const renderSummaryItems = () => (
+    <ul className="summary-items">
+      {cart.map((item) => (
+        <li key={item.cartItemId || `${item.id}-${item.selectedSize}-${item.selectedColor}`}>
+          <div className="summary-item-main">
+            <span className="summary-item-name">{item.name}</span>
+            <span className="summary-item-meta">
+              {[item.selectedSize, item.selectedColor].filter(Boolean).join(' · ')}
+              {item.selectedSize || item.selectedColor ? ' · ' : ''}
+              {item.quantity}×
+            </span>
           </div>
-        );
-      default:
-        return null;
-    }
-  };
+          <span className="summary-item-price">
+            {formatCurrency(unitPriceOf(item) * Number(item.quantity))}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
 
-  // Order Confirmation View
-  if (orderConfirmed) {
-    return (
-      <div className="checkout-page">
-        <PageMeta
-          title="Order confirmed"
-          description="Your batik order has been placed successfully."
-        />
-        <div className="container">
-          <div className="order-confirmation">
-            <div className="confirmation-icon">✓</div>
-            <h1>{t('checkout.orderSuccess')}</h1>
-            <p className="confirmation-message">
-              {t('checkout.thankYou')}
-            </p>
-            
-            <div className="order-details-box">
-              <div className="order-detail-row">
-                <span>{t('checkout.orderNumber')}:</span>
-                <strong>{orderNumber}</strong>
-              </div>
-              <div className="order-detail-row">
-                <span>{t('cart.total')}:</span>
-                <strong>{formatCurrency(total)}</strong>
-              </div>
-              <div className="order-detail-row">
-                <span>{t('checkout.paymentMethod')}:</span>
-                <strong>{getPaymentMethodName(paymentMethod)}</strong>
-              </div>
-              <div className="order-detail-row">
-                <span>Estimasi Pengiriman:</span>
-                <strong>3-5 Hari Kerja</strong>
-              </div>
-            </div>
-
-            <div className="payment-instructions">
-              <h3>Instruksi Pembayaran</h3>
-              {renderPaymentInstructions()}
-            </div>
-
-            <div className="confirmation-actions">
-              <Button variant="primary" size="large" onClick={() => navigate('/')}>
-                {t('cart.continueShopping')}
-              </Button>
-              <Button variant="outline" size="large" onClick={() => window.print()}>
-                Cetak Detail Pesanan
-              </Button>
-              <Button variant="outline" size="large" onClick={handleWhatsAppFallback}>
-                {t('checkout.whatsappFallback')}
-              </Button>
-            </div>
-            <p className="confirmation-note">{t('checkout.whatsappFallbackNote')}</p>
-          </div>
-        </div>
+  const renderSummary = () => (
+    <div className={`order-summary${isSummaryExpanded ? ' is-open' : ''}`}>
+      <div className="summary-heading">
+        <span>{t('checkout.orderSummary')}</span>
+        <span className="summary-count">
+          {itemCount} {t('checkout.itemsCount')}
+        </span>
       </div>
-    );
-  }
 
-  // Main Checkout View
+      <button
+        type="button"
+        className="summary-toggle"
+        aria-expanded={isSummaryExpanded}
+        aria-controls="checkout-summary-body"
+        onClick={() => setIsSummaryExpanded((previous) => !previous)}
+      >
+        <span>
+          {t('checkout.orderSummary')}
+          <span className="summary-count">
+            {itemCount} {t('checkout.itemsCount')}
+          </span>
+        </span>
+        <span className="summary-toggle-label">
+          {isSummaryExpanded
+            ? t('checkout.hideSummary')
+            : t('checkout.showSummary')}
+        </span>
+      </button>
+
+      <div className="summary-body" id="checkout-summary-body">
+        {renderSummaryItems()}
+
+        <dl className="summary-totals">
+          <div className="summary-row">
+            <dt>{t('checkout.subtotal')}</dt>
+            <dd>{formatCurrency(subtotal)}</dd>
+          </div>
+          <div className="summary-row">
+            <dt>
+              {t('checkout.shipping')}
+              {selectedZone ? (
+                <span className="summary-row-note">{selectedZone.name}</span>
+              ) : null}
+            </dt>
+            <dd>
+              {selectedZone
+                ? formatCurrency(selectedZone.rate_idr)
+                : t('checkout.shippingNotChosen')}
+            </dd>
+          </div>
+          <div className="summary-row">
+            <dt>{t('checkout.discount')}</dt>
+            <dd>{formatCurrency(totals?.discount_idr || 0)}</dd>
+          </div>
+          {taxMode === 'excluded' ? (
+            <div className="summary-row">
+              <dt>{t('checkout.taxLine', { rate: taxRate })}</dt>
+              <dd>{totals ? formatCurrency(totals.tax_idr) : '-'}</dd>
+            </div>
+          ) : null}
+          <div className="summary-row summary-row-total">
+            <dt>{t('checkout.total')}</dt>
+            <dd aria-live="polite">
+              {totals
+                ? formatCurrency(totals.total_idr)
+                : t('checkout.totalPending')}
+            </dd>
+          </div>
+        </dl>
+
+        {taxMode === 'included' ? (
+          <p className="summary-tax-note">{t('checkout.taxIncludedNote')}</p>
+        ) : null}
+        {selectedZone ? (
+          <p className="summary-shipping-note">
+            {selectedZone.eta_min_days && selectedZone.eta_max_days
+              ? t('checkout.etaNote', {
+                  min: selectedZone.eta_min_days,
+                  max: selectedZone.eta_max_days,
+                })
+              : t('checkout.etaUnavailable')}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+
   return (
     <div className="checkout-page">
       <PageMeta
-        title="Checkout"
-        description="Complete your order securely with delivery details, shipping quote, and payment options."
+        title={t('checkout.title')}
+        description={t('checkout.metaDescription')}
+        noIndex
       />
-      <div className="container">
-        <h1 className="checkout-title">{t('checkout.title')}</h1>
 
-        {/* Progress Steps */}
-        <div className="checkout-progress">
-          <div className={`progress-step ${currentStep >= 1 ? 'active' : ''} ${currentStep > 1 ? 'completed' : ''}`}>
-            <div className="step-number">1</div>
-            <div className="step-label">{t('checkout.step1')}</div>
+      <div className="container checkout-container">
+        <header className="checkout-header">
+          <p className="checkout-eyebrow">{t('checkout.eyebrow')}</p>
+          <h1 className="checkout-title">{t('checkout.title')}</h1>
+          <p className="checkout-lead">{t('checkout.lead')}</p>
+        </header>
+
+        <nav aria-label={t('checkout.progressLabel')}>
+          <ol className="checkout-progress">
+            <li
+              className={currentStep === 1 ? 'is-current' : 'is-complete'}
+              aria-current={currentStep === 1 ? 'step' : undefined}
+            >
+              <span className="step-number">1</span>
+              <span className="step-label">{t('checkout.stepShipping')}</span>
+            </li>
+            <li
+              className={currentStep === 2 ? 'is-current' : ''}
+              aria-current={currentStep === 2 ? 'step' : undefined}
+            >
+              <span className="step-number">2</span>
+              <span className="step-label">{t('checkout.stepConfirm')}</span>
+            </li>
+          </ol>
+        </nav>
+
+        {loadState === 'loading' ? (
+          <div className="checkout-state" role="status">
+            <p>{t('common.loading')}</p>
           </div>
-          <div className="progress-line"></div>
-          <div className={`progress-step ${currentStep >= 2 ? 'active' : ''} ${currentStep > 2 ? 'completed' : ''}`}>
-            <div className="step-number">2</div>
-            <div className="step-label">{t('checkout.step2')}</div>
+        ) : null}
+
+        {loadState === 'error' ? (
+          <div className="checkout-state checkout-state-error" role="alert">
+            <h2>{t('checkout.loadErrorTitle')}</h2>
+            <p>{t('checkout.loadErrorBody')}</p>
+            <Button
+              variant="outline"
+              onClick={() => setRetryToken((previous) => previous + 1)}
+            >
+              {t('common.retry')}
+            </Button>
           </div>
-          <div className="progress-line"></div>
-          <div className={`progress-step ${currentStep >= 3 ? 'active' : ''}`}>
-            <div className="step-number">3</div>
-            <div className="step-label">{t('checkout.step3')}</div>
+        ) : null}
+
+        {loadState === 'ready' && !hasZones ? (
+          <div className="checkout-notice" role="status">
+            <strong>{t('checkout.zonesEmptyTitle')}</strong>
+            <p>{t('checkout.zonesEmptyBody')}</p>
           </div>
-        </div>
+        ) : null}
 
-        <div className="checkout-content">
-          {/* Left Column - Forms */}
-          <div className="checkout-main">
-            {/* Step 1: Shipping Information */}
-            {currentStep === 1 && (
-              <div className="checkout-section">
-                <h2>{t('checkout.shippingInfo')}</h2>
-                <form className="checkout-form">
-                  <div className="form-group">
-                    <label htmlFor="fullName">{t('checkout.fullName')} *</label>
-                    <input
-                      type="text"
-                      id="fullName"
-                      name="fullName"
-                      value={shippingInfo.fullName}
-                      onChange={handleInputChange}
-                      autoComplete="name"
-                      className={formErrors.fullName ? 'error' : ''}
-                    />
-                    {formErrors.fullName && <span className="error-message">{formErrors.fullName}</span>}
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="email">{t('checkout.email')} *</label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={shippingInfo.email}
-                        onChange={handleInputChange}
-                        autoComplete="email"
-                        className={formErrors.email ? 'error' : ''}
-                      />
-                      {formErrors.email && <span className="error-message">{formErrors.email}</span>}
+        {loadState === 'ready' ? (
+          <div className="checkout-layout">
+            <div className="checkout-main">
+              {currentStep === 1 ? (
+                <form className="checkout-form" onSubmit={handleContinue} noValidate>
+                  <section
+                    className="checkout-section"
+                    aria-labelledby="contact-heading"
+                  >
+                    <div className="section-heading">
+                      <h2 id="contact-heading">{t('checkout.contactSection')}</h2>
+                      <p>{t('checkout.contactHint')}</p>
                     </div>
 
-                    <div className="form-group">
-                      <label htmlFor="phone">{t('checkout.phone')} *</label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        value={shippingInfo.phone}
-                        onChange={handleInputChange}
-                        placeholder="08123456789"
-                        autoComplete="tel"
-                        inputMode="tel"
-                        className={formErrors.phone ? 'error' : ''}
-                      />
-                      {formErrors.phone && <span className="error-message">{formErrors.phone}</span>}
-                    </div>
-                  </div>
+                    <div className="form-grid">
+                      <div className="form-group form-group-full">
+                        <label htmlFor="fullName">
+                          {t('checkout.fullName')} *
+                        </label>
+                        <input
+                          id="fullName"
+                          name="fullName"
+                          type="text"
+                          autoComplete="name"
+                          value={shippingInfo.fullName}
+                          onChange={handleFieldChange}
+                          aria-required="true"
+                          aria-invalid={Boolean(formErrors.fullName)}
+                          aria-describedby={
+                            formErrors.fullName ? 'fullName-error' : undefined
+                          }
+                        />
+                        <FieldError
+                          id="fullName-error"
+                          message={formErrors.fullName}
+                        />
+                      </div>
 
-                  <div className="form-group">
-                    <label htmlFor="address">{t('checkout.address')} *</label>
-                    <textarea
-                      id="address"
-                      name="address"
-                      value={shippingInfo.address}
-                      onChange={handleInputChange}
-                      rows="3"
-                      autoComplete="street-address"
-                      className={formErrors.address ? 'error' : ''}
-                    />
-                    {formErrors.address && <span className="error-message">{formErrors.address}</span>}
-                  </div>
+                      <div className="form-group">
+                        <label htmlFor="email">{t('checkout.email')} *</label>
+                        <input
+                          id="email"
+                          name="email"
+                          type="email"
+                          autoComplete="email"
+                          value={shippingInfo.email}
+                          onChange={handleFieldChange}
+                          aria-required="true"
+                          aria-invalid={Boolean(formErrors.email)}
+                          aria-describedby={
+                            formErrors.email ? 'email-error' : undefined
+                          }
+                        />
+                        <FieldError id="email-error" message={formErrors.email} />
+                      </div>
 
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="city">{t('checkout.city')} *</label>
-                      <input
-                        type="text"
-                        id="city"
-                        name="city"
-                        value={shippingInfo.city}
-                        onChange={handleInputChange}
-                        autoComplete="address-level2"
-                        className={formErrors.city ? 'error' : ''}
-                      />
-                      {formErrors.city && <span className="error-message">{formErrors.city}</span>}
+                      <div className="form-group">
+                        <label htmlFor="phone">{t('checkout.phone')} *</label>
+                        <input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          inputMode="tel"
+                          autoComplete="tel"
+                          value={shippingInfo.phone}
+                          onChange={handleFieldChange}
+                          aria-required="true"
+                          aria-invalid={Boolean(formErrors.phone)}
+                          aria-describedby={
+                            formErrors.phone ? 'phone-error' : undefined
+                          }
+                        />
+                        <FieldError id="phone-error" message={formErrors.phone} />
+                      </div>
+                    </div>
+                  </section>
+
+                  <section
+                    className="checkout-section"
+                    aria-labelledby="shipping-heading"
+                  >
+                    <div className="section-heading">
+                      <h2 id="shipping-heading">
+                        {t('checkout.shippingSection')}
+                      </h2>
+                      <p>{t('checkout.shippingHint')}</p>
                     </div>
 
-                    <div className="form-group">
-                      <label htmlFor="province">{t('checkout.province')} *</label>
-                      <input
-                        type="text"
-                        id="province"
-                        name="province"
-                        value={shippingInfo.province}
-                        onChange={handleInputChange}
-                        autoComplete="address-level1"
-                        className={formErrors.province ? 'error' : ''}
-                      />
-                      {formErrors.province && <span className="error-message">{formErrors.province}</span>}
-                    </div>
+                    <div className="form-grid">
+                      <div className="form-group form-group-full">
+                        <label htmlFor="address">
+                          {t('checkout.address')} *
+                        </label>
+                        <textarea
+                          id="address"
+                          name="address"
+                          rows="4"
+                          autoComplete="street-address"
+                          value={shippingInfo.address}
+                          onChange={handleFieldChange}
+                          aria-required="true"
+                          aria-invalid={Boolean(formErrors.address)}
+                          aria-describedby={
+                            formErrors.address ? 'address-error' : undefined
+                          }
+                        />
+                        <FieldError
+                          id="address-error"
+                          message={formErrors.address}
+                        />
+                      </div>
 
-                    <div className="form-group">
-                      <label htmlFor="postalCode">{t('checkout.postalCode')} *</label>
-                      <input
-                        type="text"
-                        id="postalCode"
-                        name="postalCode"
-                        value={shippingInfo.postalCode}
-                        onChange={handleInputChange}
-                        placeholder="12345"
-                        maxLength="5"
-                        autoComplete="postal-code"
-                        inputMode="numeric"
-                        className={formErrors.postalCode ? 'error' : ''}
-                      />
-                      {formErrors.postalCode && <span className="error-message">{formErrors.postalCode}</span>}
+                      <div className="form-group">
+                        <label htmlFor="city">{t('checkout.city')} *</label>
+                        <input
+                          id="city"
+                          name="city"
+                          type="text"
+                          autoComplete="address-level2"
+                          value={shippingInfo.city}
+                          onChange={handleFieldChange}
+                          aria-required="true"
+                          aria-invalid={Boolean(formErrors.city)}
+                          aria-describedby={
+                            formErrors.city ? 'city-error' : undefined
+                          }
+                        />
+                        <FieldError id="city-error" message={formErrors.city} />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="province">
+                          {t('checkout.province')} *
+                        </label>
+                        <select
+                          id="province"
+                          name="province"
+                          autoComplete="address-level1"
+                          value={shippingInfo.province}
+                          onChange={handleFieldChange}
+                          disabled={!hasZones}
+                          aria-required="true"
+                          aria-invalid={Boolean(formErrors.province)}
+                          aria-describedby={
+                            formErrors.province ? 'province-error' : undefined
+                          }
+                        >
+                          <option value="">
+                            {hasZones
+                              ? t('checkout.provincePlaceholder')
+                              : t('checkout.zonesEmptyShort')}
+                          </option>
+                          {provinceOptions.map(({ province }) => (
+                            <option key={province} value={province}>
+                              {province}
+                            </option>
+                          ))}
+                        </select>
+                        <FieldError
+                          id="province-error"
+                          message={formErrors.province}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="postalCode">
+                          {t('checkout.postalCode')} *
+                        </label>
+                        <input
+                          id="postalCode"
+                          name="postalCode"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="postal-code"
+                          value={shippingInfo.postalCode}
+                          onChange={handleFieldChange}
+                          aria-required="true"
+                          aria-invalid={Boolean(formErrors.postalCode)}
+                          aria-describedby={
+                            formErrors.postalCode
+                              ? 'postalCode-error'
+                              : undefined
+                          }
+                        />
+                        <FieldError
+                          id="postalCode-error"
+                          message={formErrors.postalCode}
+                        />
+                      </div>
                     </div>
+                  </section>
+
+                  <div className="checkout-actions">
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="large"
+                      disabled={!hasZones}
+                    >
+                      {t('checkout.continueToConfirm')}
+                    </Button>
                   </div>
                 </form>
-              </div>
-            )}
+              ) : (
+                <div className="checkout-confirm">
+                  <section
+                    className="checkout-section"
+                    aria-labelledby="confirm-address-heading"
+                  >
+                    <div className="section-heading section-heading-row">
+                      <h2 id="confirm-address-heading">
+                        {t('checkout.shippingSection')}
+                      </h2>
+                      <button
+                        type="button"
+                        className="link-button"
+                        onClick={handleEditAddress}
+                      >
+                        {t('checkout.editAddress')}
+                      </button>
+                    </div>
+                    <p className="confirm-name">{shippingInfo.fullName}</p>
+                    <p className="confirm-meta">
+                      {shippingInfo.phone} · {shippingInfo.email}
+                    </p>
+                    <p className="confirm-address">
+                      {shippingInfo.address}
+                      <br />
+                      {shippingInfo.city}, {shippingInfo.province}{' '}
+                      {shippingInfo.postalCode}
+                    </p>
+                  </section>
 
-            {/* Step 2: Payment Method */}
-            {currentStep === 2 && (
-              <div className="checkout-section">
-                <h2>{t('checkout.paymentMethod')}</h2>
-                <div className="payment-gateway-card">
-                  <div className="payment-info">
-                    <strong>{t('checkout.snapSandboxTitle')}</strong>
-                    <span>{t('checkout.snapSandboxDesc')}</span>
-                  </div>
-                  <div className="payment-gateway-actions">
+                  <section
+                    className="checkout-section"
+                    aria-labelledby="confirm-shipping-heading"
+                  >
+                    <div className="section-heading">
+                      <h2 id="confirm-shipping-heading">
+                        {t('checkout.shipping')}
+                      </h2>
+                    </div>
+                    <p className="confirm-name">{selectedZone?.name}</p>
+                    <p className="confirm-meta">
+                      {formatCurrency(selectedZone?.rate_idr || 0)}
+                      {selectedZone?.eta_min_days && selectedZone?.eta_max_days
+                        ? ` · ${t('checkout.etaNote', {
+                            min: selectedZone.eta_min_days,
+                            max: selectedZone.eta_max_days,
+                          })}`
+                        : ''}
+                    </p>
+                  </section>
+
+                  <section
+                    className="checkout-section"
+                    aria-labelledby="confirm-payment-heading"
+                  >
+                    <div className="section-heading">
+                      <h2 id="confirm-payment-heading">
+                        {t('checkout.paymentMethod')}
+                      </h2>
+                    </div>
+                    <div className="payment-card">
+                      <p className="payment-card-title">
+                        {t('checkout.paymentManualTitle')}
+                      </p>
+                      <p className="payment-card-body">
+                        {t('checkout.paymentManualDesc')}
+                      </p>
+                    </div>
+                  </section>
+
+                  <section
+                    className="checkout-section"
+                    aria-labelledby="confirm-items-heading"
+                  >
+                    <div className="section-heading">
+                      <h2 id="confirm-items-heading">
+                        {t('checkout.orderItems')}
+                      </h2>
+                    </div>
+                    {renderSummaryItems()}
+                  </section>
+
+                  <section
+                    className="checkout-section checkout-consent"
+                    aria-labelledby="consent-heading"
+                  >
+                    <div className="section-heading">
+                      <h2 id="consent-heading">
+                        {t('checkout.consentTitle')}
+                      </h2>
+                    </div>
+
+                    <label className="consent-row" htmlFor="consent-tos">
+                      <input
+                        id="consent-tos"
+                        name="tos"
+                        type="checkbox"
+                        checked={consent.tos}
+                        onChange={handleConsentChange}
+                      />
+                      <span>{t('checkout.consentTos')}</span>
+                    </label>
+
+                    <label className="consent-row" htmlFor="consent-privacy">
+                      <input
+                        id="consent-privacy"
+                        name="privacy"
+                        type="checkbox"
+                        checked={consent.privacy}
+                        onChange={handleConsentChange}
+                      />
+                      <span>{t('checkout.consentPrivacy')}</span>
+                    </label>
+
+                    <p className="consent-hint">{t('checkout.consentHint')}</p>
+                  </section>
+
+                  {submitError ? (
+                    <p className="checkout-alert" role="alert">
+                      {submitError}
+                    </p>
+                  ) : null}
+
+                  <div className="checkout-actions">
                     <Button
                       variant="outline"
                       size="large"
-                      onClick={() => setCurrentStep(3)}
+                      onClick={handleEditAddress}
+                      disabled={isSubmitting}
                     >
-                      {t('checkout.continue')}
+                      {t('checkout.back')}
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="large"
+                      onClick={handlePlaceOrder}
+                      disabled={!canSubmit}
+                    >
+                      {isSubmitting
+                        ? t('checkout.processing')
+                        : t('checkout.placeOrder')}
                     </Button>
                   </div>
                 </div>
-                <div className="voucher-panel">
-                  <div className="voucher-row">
-                    <input
-                      type="text"
-                      value={voucherCode}
-                      onChange={(e) => setVoucherCode(e.target.value)}
-                      placeholder={t('checkout.voucherCode')}
-                      aria-label={t('checkout.voucherCode')}
-                      autoComplete="off"
-                    />
-                    <Button variant="outline" size="large" onClick={handleApplyVoucher}>
-                      {t('checkout.applyVoucher')}
-                    </Button>
-                  </div>
-                  {appliedVoucher && (
-                    <div className="voucher-active">
-                      <span>{appliedVoucher.code}</span>
-                      <button type="button" className="voucher-remove" onClick={handleRemoveVoucher}>
-                        {t('checkout.removeVoucher')}
-                      </button>
-                    </div>
-                  )}
-                  {voucherMessage && <p className={appliedVoucher ? 'gateway-note' : 'gateway-message'}>{voucherMessage}</p>}
-                </div>
-                {gatewayMessage && <p className="gateway-message">{gatewayMessage}</p>}
-                <p className="gateway-note">{t('checkout.snapIntegrationNote')}</p>
-              </div>
-            )}
-
-            {/* Step 3: Order Review */}
-            {currentStep === 3 && (
-              <div className="checkout-section">
-                <h2>{t('checkout.orderReview')}</h2>
-                
-                <div className="review-section">
-                  <h3>Shipping Address</h3>
-                  <div className="review-info">
-                    <p><strong>{shippingInfo.fullName}</strong></p>
-                    <p>{shippingInfo.address}</p>
-                    <p>{shippingInfo.city}, {shippingInfo.province} {shippingInfo.postalCode}</p>
-                    <p>Phone: {shippingInfo.phone}</p>
-                    <p>Email: {shippingInfo.email}</p>
-                  </div>
-                  <button 
-                    className="edit-link"
-                    onClick={() => setCurrentStep(1)}
-                  >
-                    Edit
-                  </button>
-                </div>
-
-                <div className="review-section">
-                  <h3>Payment Method</h3>
-                  <div className="review-info">
-                    <p><strong>{getPaymentMethodName(paymentMethod)}</strong></p>
-                  </div>
-                  <button 
-                    className="edit-link"
-                    onClick={() => setCurrentStep(2)}
-                  >
-                    Edit
-                  </button>
-                </div>
-
-                <div className="review-section">
-                  <h3>Order Items</h3>
-                  <div className="review-items">
-                    {cart && cart.map((item) => (
-                      <div key={item.cartItemId} className="review-item">
-                        <img src={item.images?.[0] || item.image} alt={item.name} />
-                        <div className="review-item-details">
-                          <h4>{item.name}</h4>
-                          <p>Size: {item.selectedSize} | Color: {item.selectedColor}</p>
-                          <p>Quantity: {item.quantity}</p>
-                        </div>
-                        <div className="review-item-price">
-                          {formatPrice(item.price * item.quantity)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Navigation Buttons */}
-            <div className="checkout-actions">
-              {currentStep > 1 && (
-                <Button
-                  variant="outline"
-                  size="large"
-                  onClick={() => setCurrentStep(currentStep - 1)}
-                >
-                  {t('checkout.back')}
-                </Button>
-              )}
-              {currentStep < 3 ? (
-                <Button
-                  variant="primary"
-                  size="large"
-                  onClick={handleNextStep}
-                >
-                  {t('checkout.continue')}
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    variant="primary"
-                    size="large"
-                    onClick={handlePlaceOrder}
-                    disabled={isSubmittingPayment}
-                  >
-                    {isSubmittingPayment ? t('checkout.processing') : t('checkout.placeOrder')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="large"
-                    onClick={handleWhatsAppFallback}
-                  >
-                    {t('checkout.whatsappFallback')}
-                  </Button>
-                </>
               )}
             </div>
+
+            <aside className="checkout-sidebar">
+              {renderSummary()}
+              <p className="checkout-help">
+                {t('checkout.helpText')}
+              </p>
+            </aside>
           </div>
-
-          {/* Right Column - Order Summary */}
-          <div className={`checkout-sidebar ${isSummaryExpanded ? 'is-expanded' : ''}`}>
-            <div className="order-summary">
-              <button
-                type="button"
-                className="order-summary-toggle"
-                onClick={() => setIsSummaryExpanded(prev => !prev)}
-                aria-expanded={isSummaryExpanded}
-                aria-label={isSummaryExpanded ? t('checkout.hideSummary') : t('checkout.showSummary')}
-              >
-                <div className="order-summary-toggle-copy">
-                  <h3>{t('checkout.orderSummary')}</h3>
-                  <span className="order-summary-count">{summaryItemCount}</span>
-                </div>
-                <div className="order-summary-toggle-meta">
-                  <span>{formatPrice(total)}</span>
-                  <span className="order-summary-toggle-icon">{isSummaryExpanded ? '−' : '+'}</span>
-                </div>
-              </button>
-
-              <div className="order-summary-content">
-                <div className="summary-items">
-                  {cart && cart.map((item) => (
-                    <div key={item.cartItemId} className="summary-item">
-                      <span className="item-name">
-                        {item.name} × {item.quantity}
-                      </span>
-                      <span className="item-price">
-                        {formatPrice(item.price * item.quantity)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="summary-divider"></div>
-
-                <div className="summary-row">
-                  <span>{t('cart.subtotal')}</span>
-                  <span>{formatPrice(subtotal)}</span>
-                </div>
-
-                <div className="summary-row">
-                  <span>{t('cart.tax')}</span>
-                  <span>{formatPrice(tax)}</span>
-                </div>
-
-                {discountAmount > 0 && (
-                  <div className="summary-row">
-                    <span>{t('checkout.voucherDiscount')}</span>
-                    <span>-{formatPrice(discountAmount)}</span>
-                  </div>
-                )}
-
-                <div className="summary-row">
-                  <span>{t('cart.shipping')}</span>
-                  <span>{shippingCost === 0 ? t('cart.freeShipping') : formatPrice(shippingCost)}</span>
-                </div>
-
-                {(isShippingQuoteLoading || shippingQuoteMessage) && (
-                  <p className="shipping-quote-note">
-                    {isShippingQuoteLoading ? t('common.loading') : shippingQuoteMessage}
-                  </p>
-                )}
-
-                {subtotal >= 1000000 && (
-                  <div className="free-shipping-note">
-                    {t('cart.freeShippingNotice')}
-                  </div>
-                )}
-
-                <div className="summary-divider"></div>
-
-                <div className="summary-total">
-                  <span>{t('cart.total')}</span>
-                  <span>{formatPrice(total)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );

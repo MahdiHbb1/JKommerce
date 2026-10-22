@@ -11,6 +11,9 @@ import { RecentlyViewedProvider } from './context/RecentlyViewedContext';
 import { HelmetProvider } from 'react-helmet-async';
 import ToastContainer from './components/Toast/ToastContainer';
 import App from './App';
+import '@fontsource-variable/inter';
+import '@fontsource-variable/playfair-display';
+import './styles/tokens.css';
 import './index.css';
 
 const registerServiceWorker = () => {

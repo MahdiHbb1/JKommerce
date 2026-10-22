@@ -16,51 +16,60 @@
 
 .search-input {
   width: 100%;
-  padding: 10px 45px 10px 15px;
-  border: 2px solid #ddd;
-  border-radius: 25px;
+  min-height: 44px;
+  padding: 10px 52px 10px 14px;
+  border: 1px solid var(--color-ink-faint);
+  border-radius: var(--radius-xs);
   font-size: 14px;
-  font-family: 'Poppins', sans-serif;
-  transition: all 0.3s ease;
-  background: white;
+  font-family: var(--font-body);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: var(--color-paper-raised);
+  color: var(--color-ink);
+}
+
+.search-input::placeholder {
+  color: var(--color-ink-faint);
 }
 
 .search-input:focus {
-  outline: none;
-  border-color: #8B4513;
-  box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(161, 98, 7, 0.14);
 }
 
 .search-button {
   position: absolute;
-  right: 5px;
+  right: 0;
+  width: 44px;
+  height: 44px;
   background: none;
   border: none;
-  padding: 8px 12px;
+  border-radius: var(--radius-xs);
+  padding: 0;
   cursor: pointer;
-  color: #666;
+  color: var(--color-ink-soft);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.3s ease;
+  transition: color 0.2s ease;
 }
 
 .search-button:hover {
-  color: #8B4513;
+  color: var(--color-gold);
 }
 
 .search-results {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   left: 0;
   right: 0;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  background: var(--color-paper-raised);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 16px 40px rgba(28, 25, 23, 0.14);
   z-index: 1000;
   max-height: 450px;
   overflow-y: auto;
-  animation: slideDown 0.3s ease;
+  animation: slideDown 0.2s ease;
 }
 
 @keyframes slideDown {
@@ -88,15 +97,32 @@
 }
 
 .search-result-item:hover {
-  background-color: #f8f8f8;
+  background-color: var(--color-paper-deep);
+}
+
+.search-result-item:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: -2px;
 }
 
 .result-image {
   width: 60px;
   height: 60px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   flex-shrink: 0;
+}
+
+.result-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: var(--color-paper-deep);
+  color: var(--color-ink-soft);
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .result-info {
@@ -107,7 +133,7 @@
 .result-name {
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: var(--color-ink);
   margin: 0 0 4px 0;
   white-space: nowrap;
   overflow: hidden;
@@ -116,33 +142,34 @@
 
 .result-category {
   font-size: 12px;
-  color: #666;
+  color: var(--color-ink-soft);
   margin: 0 0 4px 0;
 }
 
 .result-price {
   font-size: 14px;
   font-weight: 600;
-  color: #8B4513;
+  color: var(--color-gold);
   margin: 0;
 }
 
 .view-all-button {
   width: 100%;
+  min-height: 44px;
   padding: 12px;
-  background: #8B4513;
-  color: white;
+  background: var(--color-brown-ink);
+  color: var(--color-paper);
   border: none;
-  border-radius: 0 0 12px 12px;
-  font-family: 'Poppins', sans-serif;
+  border-radius: 0 0 var(--radius-xs) var(--radius-xs);
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.2s ease;
 }
 
 .view-all-button:hover {
-  background: #6d3410;
+  background: var(--color-brown-deep);
 }
 
 .no-results {
@@ -151,25 +178,26 @@
 }
 
 .no-results p {
-  color: #666;
+  color: var(--color-ink-soft);
   margin-bottom: 15px;
   font-size: 14px;
 }
 
 .no-results button {
+  min-height: 44px;
   padding: 10px 20px;
-  background: #8B4513;
-  color: white;
+  background: var(--color-brown-ink);
+  color: var(--color-paper);
   border: none;
-  border-radius: 20px;
-  font-family: 'Poppins', sans-serif;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-body);
   font-size: 14px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.2s ease;
 }
 
 .no-results button:hover {
-  background: #6d3410;
+  background: var(--color-brown-deep);
 }
 
 /* Mobile styles */
@@ -189,15 +217,15 @@
 }
 
 .search-results::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 0 12px 12px 0;
+  background: var(--color-paper-deep);
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
 }
 
 .search-results::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: var(--color-line-strong);
   border-radius: 3px;
 }
 
 .search-results::-webkit-scrollbar-thumb:hover {
-  background: #999;
+  background: var(--color-ink-faint);
 }

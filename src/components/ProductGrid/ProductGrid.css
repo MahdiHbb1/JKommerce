@@ -57,7 +57,7 @@
 }
 
 .empty-state h3 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 1.75rem;
   color: var(--primary-navy);
   margin-bottom: 0.75rem;

@@ -216,7 +216,7 @@
 }
 
 .product-name {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 600;
   color: var(--primary-navy);

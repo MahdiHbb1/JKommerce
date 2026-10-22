@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Button from '../ui/Button';
+import { useTranslation } from '../../hooks/useTranslation';
 
 /**
  * Pagination Component
@@ -15,6 +16,8 @@ const Pagination = ({
   totalItems,
   onItemsPerPageChange,
 }) => {
+  const { t } = useTranslation();
+
   const handlePrevious = () => {
     if (currentPage > 1) {
       onPageChange(currentPage - 1);
@@ -97,9 +100,7 @@ const Pagination = ({
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
       {/* Results Info */}
       <div className="text-sm text-neutral-600">
-        Showing <span className="font-medium text-neutral-900">{startItem}</span> to{' '}
-        <span className="font-medium text-neutral-900">{endItem}</span> of{' '}
-        <span className="font-medium text-neutral-900">{totalItems}</span> results
+        {t('pagination.showing', { shown: `${startItem}-${endItem}`, total: totalItems })}
       </div>
 
       {/* Page Numbers */}
@@ -112,7 +113,7 @@ const Pagination = ({
           disabled={currentPage === 1}
           icon={<ChevronLeftIcon />}
           className="!px-2"
-          aria-label="Previous page"
+          aria-label={t('pagination.previous')}
         />
 
         {/* Page Numbers */}
@@ -134,7 +135,7 @@ const Pagination = ({
                   ? 'bg-primary-600 text-white'
                   : 'bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-50'
               }`}
-              aria-label={`Page ${page}`}
+              aria-label={`${t('pagination.page')} ${page}`}
               aria-current={currentPage === page ? 'page' : undefined}
             >
               {page}
@@ -150,7 +151,7 @@ const Pagination = ({
           disabled={currentPage === totalPages}
           icon={<ChevronRightIcon />}
           className="!px-2"
-          aria-label="Next page"
+          aria-label={t('pagination.next')}
         />
       </div>
 
@@ -158,7 +159,7 @@ const Pagination = ({
       {onItemsPerPageChange && (
         <div className="flex items-center gap-2">
           <label htmlFor="items-per-page" className="text-sm text-neutral-600">
-            Per page:
+            {t('pagination.perPage')}:
           </label>
           <select
             id="items-per-page"

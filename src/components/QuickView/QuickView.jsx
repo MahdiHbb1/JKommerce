@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { formatPrice } from '../../data/products';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useToast } from '../../context/ToastContext';
@@ -12,11 +11,41 @@ import Button from '../ui/Button';
  * Displays a quick preview of a product with add to cart functionality
  */
 
+const COLOR_SWATCHES = [
+  ['black', '#1c1917'],
+  ['navy', '#1e3a5f'],
+  ['indigo', '#2f3e75'],
+  ['blue', '#345a8a'],
+  ['brown', '#8b6f47'],
+  ['soga', '#7a5a35'],
+  ['maroon', '#7f1d1d'],
+  ['red', '#b91c1c'],
+  ['gold', '#d4af37'],
+  ['cream', '#e8d9b5'],
+  ['beige', '#d8c3a5'],
+  ['white', '#faf7f2'],
+  ['grey', '#9ca3af'],
+  ['gray', '#9ca3af'],
+  ['pink', '#d8a7b1'],
+  ['purple', '#8b7aa8'],
+  ['green', '#5f7f5a'],
+  ['mint', '#b7d8c6'],
+];
+
+const getSwatchColor = (name) => {
+  const value = String(name || '').toLowerCase();
+  const match = COLOR_SWATCHES.find(([key]) => value.includes(key));
+  return match ? match[1] : 'var(--color-paper-deep)';
+};
+
 const QuickView = ({ product, onClose }) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const dialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -45,8 +74,6 @@ const QuickView = ({ product, onClose }) => {
     };
   }, [product]);
 
-  if (!product) return null;
-
   const handleAddToCart = () => {
     const cartItem = {
       ...product,
@@ -73,36 +100,78 @@ const QuickView = ({ product, onClose }) => {
     }
   };
 
-  const handleEscapeKey = (e) => {
-    if (e.key === 'Escape') {
-      onClose();
+  useEffect(() => {
+    const handleEscapeKey = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement;
+    const focusTimer = window.setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      const previous = previousFocusRef.current;
+      if (previous && typeof previous.focus === 'function') {
+        previous.focus();
+      }
+    };
+  }, []);
+
+  const handleDialogKeyDown = (event) => {
+    if (event.key !== 'Tab') return;
+
+    const focusable = Array.from(
+      dialogRef.current?.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ) || []
+    );
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
     }
   };
 
-  useEffect(() => {
-    document.addEventListener('keydown', handleEscapeKey);
-    return () => document.removeEventListener('keydown', handleEscapeKey);
-  }, []);
+  if (!product) return null;
 
-  useEffect(() => {
-    document.addEventListener('keydown', handleEscapeKey);
-    return () => document.removeEventListener('keydown', handleEscapeKey);
-  }, []);
+  const productImages = product.images || [];
+  const currentImage = productImages[selectedImage];
 
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm animate-fade-in"
       onClick={handleBackdropClick}
     >
-      <div 
-        className="relative w-full max-w-5xl bg-white rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto animate-slide-up"
-        onClick={(e) => e.stopPropagation()}
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quickview-title"
+        tabIndex={-1}
+        className="relative w-full max-w-5xl bg-[var(--color-paper-raised)] text-[var(--color-ink)] rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto animate-scale-in"
+        onKeyDown={handleDialogKeyDown}
       >
         {/* Close Button */}
         <button
-          className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-md hover:bg-gray-100 transition-colors"
+          ref={closeButtonRef}
+          type="button"
+          className="absolute top-4 right-4 z-10 w-11 h-11 flex items-center justify-center rounded-full bg-[var(--color-paper-raised)] text-[var(--color-ink)] shadow-md hover:bg-[var(--color-paper-deep)] transition-colors"
           onClick={onClose}
-          aria-label="Close quick view"
+          aria-label={t('common.close')}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -113,34 +182,44 @@ const QuickView = ({ product, onClose }) => {
           {/* Images Section */}
           <div className="space-y-4">
             {/* Main Image */}
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
-              <img 
-                src={product.images[selectedImage]} 
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
+            <div className="relative aspect-square rounded-lg overflow-hidden bg-[var(--color-paper-deep)]">
+              {currentImage ? (
+                <img
+                  src={currentImage}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-[var(--color-paper-deep)] px-6 text-center text-[var(--color-ink)]">
+                  <div>
+                    <p className="font-medium">{product.name}</p>
+                    <p className="text-sm text-[var(--color-ink-soft)] mt-1">{t('product.noImage')}</p>
+                  </div>
+                </div>
+              )}
               {product.featured && (
-                <span className="absolute top-3 left-3 px-3 py-1 bg-batik-orange text-white text-xs font-semibold rounded-full">
+                <span className="absolute top-3 left-3 px-3 py-1 bg-[var(--color-brown-ink)] text-[var(--color-paper)] text-xs font-semibold rounded-full">
                   {t('product.featured')}
                 </span>
               )}
               {product.bestseller && (
-                <span className="absolute top-3 right-3 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
+                <span className="absolute bottom-3 right-3 px-3 py-1 bg-[var(--color-gold-bright)] text-[var(--color-brown-ink)] text-xs font-semibold rounded-full">
                   {t('product.bestSeller')}
                 </span>
               )}
             </div>
             
             {/* Thumbnails */}
-            {product.images.length > 1 && (
+            {productImages.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
-                {product.images.map((image, index) => (
+                {productImages.map((image, index) => (
                   <button
                     key={index}
+                    type="button"
                     className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === index 
-                        ? 'border-batik-orange ring-2 ring-batik-orange ring-opacity-50' 
-                        : 'border-gray-200 hover:border-gray-300'
+                      selectedImage === index
+                        ? 'border-[var(--color-brown-ink)] ring-2 ring-[var(--color-gold)]'
+                        : 'border-[var(--color-line)] hover:border-[var(--color-line-strong)]'
                     }`}
                     onClick={() => setSelectedImage(index)}
                   >
@@ -159,22 +238,22 @@ const QuickView = ({ product, onClose }) => {
           <div className="space-y-6">
             {/* Header */}
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+              <h2 id="quickview-title" className="text-2xl md:text-3xl font-bold text-[var(--color-ink)] mb-2">
                 {product.name}
               </h2>
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-3xl font-bold text-batik-orange">
+                <span className="text-3xl font-bold text-[var(--color-brown-ink)]">
                   {formatCurrency(product.price)}
                 </span>
                 {product.stock > 0 ? (
-                  <span className="flex items-center gap-1 text-sm text-green-600">
+                  <span className="flex items-center gap-1 text-sm text-[var(--color-ink-soft)]">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                     {t('product.inStock')} ({t('product.stockAvailable', { stock: product.stock })})
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-sm text-red-600">
+                  <span className="flex items-center gap-1 text-sm text-[var(--color-danger)]">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
@@ -183,39 +262,38 @@ const QuickView = ({ product, onClose }) => {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 text-xs font-medium bg-batik-brown bg-opacity-10 text-batik-brown rounded-full">
+                <span className="px-3 py-1 text-xs font-medium bg-[var(--color-paper-deep)] text-[var(--color-ink-soft)] rounded-full">
                   {product.category}
                 </span>
-                <span className="px-3 py-1 text-xs font-medium bg-batik-blue bg-opacity-10 text-batik-blue rounded-full">
+                <span className="px-3 py-1 text-xs font-medium bg-[var(--color-paper-deep)] text-[var(--color-brown-ink)] rounded-full">
                   {product.pattern}
                 </span>
               </div>
             </div>
 
             {/* Description */}
-            <p className="text-gray-600 leading-relaxed">
+            <p className="text-[var(--color-ink-soft)] leading-relaxed">
               {product.description}
             </p>
 
             {/* Size Options */}
             {product.sizes && product.sizes.length > 0 && (
               <div>
-                <label id="quickview-size" className="block text-sm font-medium text-gray-700 mb-2">
+                <span id="quickview-size" className="block text-sm font-medium text-[var(--color-ink)] mb-2">
                   {t('product.size')}:
-                </label>
+                </span>
                 <div className="flex flex-wrap gap-2" role="group" aria-labelledby="quickview-size">
                   {product.sizes.map(size => (
                     <button
                       key={size}
                       type="button"
-                      className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
+                      className={`min-h-11 px-4 py-2 inline-flex items-center justify-center text-sm font-medium rounded-[var(--radius-sm)] border-2 transition-all ${
                         selectedSize === size
-                          ? 'border-batik-orange bg-batik-orange text-white'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                          ? 'border-[var(--color-brown-ink)] bg-[var(--color-brown-ink)] text-[var(--color-paper)]'
+                          : 'border-[var(--color-line-strong)] bg-[var(--color-paper-raised)] text-[var(--color-ink)] hover:border-[var(--color-brown)]'
                       }`}
                       onClick={() => setSelectedSize(size)}
                       aria-pressed={selectedSize === size}
-                      aria-label={`Select size ${size}`}
                     >
                       {size}
                     </button>
@@ -227,25 +305,35 @@ const QuickView = ({ product, onClose }) => {
             {/* Color Options */}
             {product.colors && product.colors.length > 0 && (
               <div>
-                <label id="quickview-color" className="block text-sm font-medium text-gray-700 mb-2">
+                <span id="quickview-color" className="block text-sm font-medium text-[var(--color-ink)] mb-2">
                   {t('product.color')}:
-                </label>
+                </span>
                 <div className="flex flex-wrap gap-2" role="group" aria-labelledby="quickview-color">
                   {product.colors.map(color => (
                     <button
                       key={color}
                       type="button"
-                      className={`w-10 h-10 rounded-full border-2 transition-all ${
-                        selectedColor === color
-                          ? 'border-batik-orange ring-2 ring-batik-orange ring-opacity-50'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
+                      className="flex min-h-11 min-w-11 flex-col items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-gold)]"
                       onClick={() => setSelectedColor(color)}
-                      style={{ backgroundColor: color.toLowerCase() }}
-                      title={color}
-                      aria-label={`Select color ${color}`}
                       aria-pressed={selectedColor === color}
-                    />
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`block h-11 w-11 rounded-full border-2 transition-all ${
+                          selectedColor === color
+                            ? 'border-[var(--color-brown-ink)] ring-2 ring-[var(--color-gold)]'
+                            : 'border-[var(--color-line-strong)]'
+                        }`}
+                        style={{ backgroundColor: getSwatchColor(color) }}
+                      />
+                      <span className={`text-xs leading-tight ${
+                        selectedColor === color
+                          ? 'font-semibold text-[var(--color-brown-ink)]'
+                          : 'text-[var(--color-ink-soft)]'
+                      }`}>
+                        {color}
+                      </span>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -253,16 +341,18 @@ const QuickView = ({ product, onClose }) => {
 
             {/* Quantity */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <span id="quickview-quantity" className="block text-sm font-medium text-[var(--color-ink)] mb-2">
                 {t('product.quantity')}:
-              </label>
-              <div className="flex items-center gap-3">
+              </span>
+              <div className="flex items-center gap-3" role="group" aria-labelledby="quickview-quantity">
                 <button
-                  className="w-10 h-10 flex items-center justify-center rounded-lg border-2 border-gray-300 hover:border-gray-400 text-gray-700 transition-colors disabled:opacity-50"
+                  type="button"
+                  className="h-11 w-11 flex items-center justify-center rounded-[var(--radius-sm)] border-2 border-[var(--color-line-strong)] hover:border-[var(--color-brown)] text-[var(--color-ink)] transition-colors disabled:opacity-50"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   disabled={quantity <= 1}
+                  aria-label={t('cart.decreaseQuantity')}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                   </svg>
                 </button>
@@ -270,11 +360,13 @@ const QuickView = ({ product, onClose }) => {
                   {quantity}
                 </span>
                 <button
-                  className="w-10 h-10 flex items-center justify-center rounded-lg border-2 border-gray-300 hover:border-gray-400 text-gray-700 transition-colors disabled:opacity-50"
+                  type="button"
+                  className="h-11 w-11 flex items-center justify-center rounded-[var(--radius-sm)] border-2 border-[var(--color-line-strong)] hover:border-[var(--color-brown)] text-[var(--color-ink)] transition-colors disabled:opacity-50"
                   onClick={() => setQuantity(quantity + 1)}
                   disabled={product.stock > 0 && quantity >= product.stock}
+                  aria-label={t('cart.increaseQuantity')}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                 </button>
@@ -285,7 +377,7 @@ const QuickView = ({ product, onClose }) => {
             <div className="flex gap-3 pt-4">
               <Button
                 variant="primary"
-                size="large"
+                size="lg"
                 onClick={handleAddToCart}
                 disabled={product.stock === 0}
                 className="flex-1"
@@ -296,15 +388,18 @@ const QuickView = ({ product, onClose }) => {
                 {t('product.addToCart')}
               </Button>
               <button
-                className={`p-3 rounded-lg border-2 transition-all ${
+                type="button"
+                className={`p-3 rounded-[var(--radius-sm)] border-2 transition-all ${
                   isInWishlist(product.id)
-                    ? 'border-red-500 bg-red-50 text-red-500'
-                    : 'border-gray-300 hover:border-red-300 hover:bg-red-50 text-gray-700'
+                    ? 'border-[var(--color-gold)] bg-[var(--color-paper-deep)] text-[var(--color-gold)]'
+                    : 'border-[var(--color-line-strong)] hover:border-[var(--color-gold)] hover:bg-[var(--color-paper)] text-[var(--color-ink-soft)]'
                 }`}
                 onClick={handleWishlistToggle}
-                aria-label={isInWishlist(product.id) ? t('wishlist.removeFromWishlist') : t('wishlist.addToWishlist')}
+                aria-pressed={isInWishlist(product.id)}
+                aria-label={t('nav.wishlist')}
               >
                 <svg 
+                  aria-hidden="true"
                   className="w-6 h-6" 
                   fill={isInWishlist(product.id) ? 'currentColor' : 'none'} 
                   stroke="currentColor" 
@@ -316,29 +411,23 @@ const QuickView = ({ product, onClose }) => {
             </div>
 
             <Link
-              to={`/product/${product.id}`}
-              className="block w-full text-center py-3 text-batik-orange hover:text-batik-orange-dark font-medium transition-colors"
+              to={`/product/${product.slug || product.id}`}
+              className="block w-full text-center py-3 text-[var(--color-brown-ink)] hover:text-[var(--color-gold)] font-medium transition-colors"
               onClick={onClose}
             >
-              {t('product.viewDetails')} →
+              {t('product.viewDetails')}
             </Link>
 
             {/* Features */}
-            <div className="border-t pt-6 space-y-3">
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <svg className="w-5 h-5 text-batik-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="border-t border-[var(--color-line)] pt-6 space-y-3">
+              <div className="flex items-center gap-3 text-sm text-[var(--color-ink-soft)]">
+                <svg aria-hidden="true" className="w-5 h-5 text-[var(--color-gold)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                 </svg>
-                <span>{t('features.freeShipping')}</span>
+                <span>{t('product.shippingNote')}</span>
               </div>
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <svg className="w-5 h-5 text-batik-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span>{t('features.returnPolicy')}</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <svg className="w-5 h-5 text-batik-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-3 text-sm text-[var(--color-ink-soft)]">
+                <svg aria-hidden="true" className="w-5 h-5 text-[var(--color-gold)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>{t('features.authenticBatik')}</span>

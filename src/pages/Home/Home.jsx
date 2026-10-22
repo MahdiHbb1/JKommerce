@@ -1,30 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import { useToast } from '../../context/ToastContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import ProductGrid from '../../components/ProductGrid/ProductGrid';
 import QuickView from '../../components/QuickView/QuickView';
-import Button from '../../components/Button/Button';
 import PageMeta from '../../components/Seo/PageMeta';
-import { getFeaturedProducts, getBestsellerProducts } from '../../data/products';
+import { ProductGridSkeleton } from '../../components/Skeleton/Skeleton';
+import { fetchProducts } from '../../lib/db/catalog';
+import { toCardProduct } from '../../lib/db/presenters';
 import parangImg from '../../assets/images/motif-parang.jpg';
 import kawungImg from '../../assets/images/motif-kawung.jpg';
 import kontemporerImg from '../../assets/images/motif-kontemporer.jpg';
-import megaMendungImg from '../../assets/images/batik-motif-mega-mendung.jpg';
-import sekarJagadImg from '../../assets/images/motif-sekar-jagad.jpg';
+import soganImg from '../../assets/images/motif-sogan.jpg';
 import './Home.css';
 
 const Home = () => {
   const { addToCart } = useCart();
+  const { success } = useToast();
   const { t } = useTranslation();
   const [quickViewProduct, setQuickViewProduct] = useState(null);
-  
-  const featuredProducts = getFeaturedProducts().slice(0, 4);
-  const bestsellerProducts = getBestsellerProducts().slice(0, 4);
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [brokenHeroImage, setBrokenHeroImage] = useState(null);
+
+  const loadProducts = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const data = await fetchProducts();
+      setProducts(data.map(toCardProduct));
+      setBrokenHeroImage(null);
+    } catch (error) {
+      console.error('Gagal memuat katalog:', error);
+      setLoadError(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  const featuredProducts = products.filter((product) => product.featured).slice(0, 4);
+  const heroProduct = featuredProducts[0] || null;
+  const heroProductImage = heroProduct?.images?.[0] || null;
+  const heroImageSrc =
+    heroProductImage && brokenHeroImage !== heroProductImage
+      ? heroProductImage
+      : soganImg;
+  const heroShowsProduct = Boolean(heroProduct) && heroImageSrc === heroProductImage;
+  const heroCaption = heroShowsProduct
+    ? t('home.heroImageCaption', { name: heroProduct.name })
+    : t('home.heroFallbackCaption');
+
+  const categories = [
+    {
+      to: '/shop?category=Batik Tulis',
+      titleKey: 'home.batikTulis',
+      bodyKey: 'home.categoryTulisBody',
+      altKey: 'home.categoryTulisAlt',
+      image: parangImg,
+    },
+    {
+      to: '/shop?category=Batik Cap',
+      titleKey: 'home.batikCap',
+      bodyKey: 'home.categoryCapBody',
+      altKey: 'home.categoryCapAlt',
+      image: kawungImg,
+    },
+    {
+      to: '/shop?category=Batik Printing',
+      titleKey: 'home.batikPrinting',
+      bodyKey: 'home.categoryPrintingBody',
+      altKey: 'home.categoryPrintingAlt',
+      image: kontemporerImg,
+    },
+  ];
+
+  const motifs = [
+    { title: t('home.parang'), body: t('home.motifParangBody') },
+    { title: t('home.kawung'), body: t('home.motifKawungBody') },
+    { title: t('home.megaMendung'), body: t('home.motifMegaMendungBody') },
+  ];
 
   const handleAddToCart = (product) => {
     addToCart(product, 1);
-    alert(`✓ "${product.name}" ${t('notifications.addedToCart')}`);
+    success(t('notifications.addedToCart', { name: product.name }));
   };
 
   const handleQuickView = (product) => {
@@ -35,211 +99,195 @@ const Home = () => {
     setQuickViewProduct(null);
   };
 
+  const renderCollection = (items) => {
+    if (isLoading) {
+      return <ProductGridSkeleton count={4} />;
+    }
+
+    if (loadError) {
+      return (
+        <div role="alert" className="home-products__state">
+          <h3>{t('shop.loadError')}</h3>
+          <p>{t('shop.loadErrorHint')}</p>
+          <button
+            type="button"
+            onClick={loadProducts}
+            className="home-button home-button--primary"
+          >
+            {t('shop.retry')}
+          </button>
+        </div>
+      );
+    }
+
+    if (!isLoading && !loadError && items.length === 0) {
+      return (
+        <div className="home-products__state">
+          <h3>{t('home.collectionEmptyTitle')}</h3>
+          <p>{t('home.collectionEmptyBody')}</p>
+          <Link to="/shop" className="home-button home-button--primary">
+            {t('home.collectionEmptyCta')}
+          </Link>
+        </div>
+      );
+    }
+
+    return (
+      <ProductGrid
+        products={items}
+        onAddToCart={handleAddToCart}
+        onQuickView={handleQuickView}
+      />
+    );
+  };
+
   return (
     <div className="home-page">
       <PageMeta
-        title="Handcrafted batik collection"
-        description="Discover premium Indonesian batik pieces, curated patterns, and artisan craftsmanship at Janoer Koening."
+        title={t('home.metaTitle')}
+        description={t('home.metaDescription')}
       />
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-background">
-          <div className="hero-overlay"></div>
-        </div>
-        <div className="container">
-          <div className="hero-content">
-            <span className="hero-label">{t('home.heroLabel')}</span>
-            <h1 className="hero-title">Janoer Koening</h1>
-            <p className="hero-tagline">{t('home.heroTagline')}</p>
-            <p className="hero-description">
-              {t('home.heroDescription')}
-            </p>
-            <div className="hero-actions">
-              <Link to="/shop">
-                <Button variant="primary" size="large">
-                  {t('home.exploreCollection')}
-                </Button>
-              </Link>
-              <Link to="/about">
-                <Button variant="outline" size="large">
-                  {t('home.ourStory')}
-                </Button>
+
+      <section className="home-hero" aria-labelledby="home-hero-title">
+        <div className="home-container home-hero__inner">
+          <div className="home-hero__copy">
+            <p className="home-kicker">{t('home.heroKicker')}</p>
+            <h1 id="home-hero-title" className="home-hero__title">
+              {t('home.heroHeading')}
+            </h1>
+            <p className="home-hero__body">{t('home.heroBody')}</p>
+            <div className="home-hero__actions">
+              <Link to="/shop" className="home-button home-button--primary">
+                {t('home.heroCta')}
               </Link>
             </div>
           </div>
+
+          <figure className="home-hero__figure">
+            <div className="home-hero__image">
+              <img
+                src={heroImageSrc}
+                alt={heroShowsProduct ? heroProduct.name : t('home.heroFallbackAlt')}
+                onError={() => setBrokenHeroImage(heroProductImage)}
+              />
+            </div>
+            <figcaption className="home-hero__caption">
+              {heroShowsProduct ? (
+                <Link
+                  to={`/product/${heroProduct.slug || heroProduct.id}`}
+                  className="home-hero__caption-link"
+                >
+                  {heroCaption}
+                </Link>
+              ) : (
+                <span>{heroCaption}</span>
+              )}
+            </figcaption>
+          </figure>
         </div>
       </section>
 
-      {/* Category Showcase */}
-      <section className="category-showcase">
-        <div className="container">
-          <div className="section-header">
-            <h2>{t('home.exploreTechnique')}</h2>
-            <p>{t('home.techniqueDescription')}</p>
-          </div>
-          <div className="category-grid">
-            <Link to="/shop?category=Batik Tulis" className="category-card">
-              <div className="category-image">
-                <img src={parangImg} alt="Batik Tulis" />
-                <div className="category-overlay">
-                  <span className="category-badge">{t('home.premium')}</span>
+      <section className="home-categories" aria-labelledby="home-categories-title">
+        <div className="home-container">
+          <header className="home-section-head">
+            <div>
+              <p className="home-kicker">{t('home.categoriesKicker')}</p>
+              <h2 id="home-categories-title">{t('home.categoriesHeading')}</h2>
+            </div>
+            <p className="home-section-head__body">{t('home.categoriesBody')}</p>
+          </header>
+
+          <div className="home-category-grid">
+            {categories.map((category) => (
+              <Link key={category.to} to={category.to} className="home-category">
+                <div className="home-category__media">
+                  <img
+                    src={category.image}
+                    alt={t(category.altKey)}
+                    loading="lazy"
+                  />
                 </div>
-              </div>
-              <div className="category-info">
-                <h3>{t('home.batikTulis')}</h3>
-                <p>{t('home.batikTulisDesc')}</p>
-                <span className="category-link">{t('home.viewCollection')} →</span>
-              </div>
-            </Link>
-            <Link to="/shop?category=Batik Cap" className="category-card">
-              <div className="category-image">
-                <img src={kawungImg} alt="Batik Cap" />
-                <div className="category-overlay"></div>
-              </div>
-              <div className="category-info">
-                <h3>{t('home.batikCap')}</h3>
-                <p>{t('home.batikCapDesc')}</p>
-                <span className="category-link">{t('home.viewCollection')} →</span>
-              </div>
-            </Link>
-            <Link to="/shop?category=Batik Printing" className="category-card">
-              <div className="category-image">
-                <img src={kontemporerImg} alt="Batik Printing" />
-                <div className="category-overlay"></div>
-              </div>
-              <div className="category-info">
-                <h3>{t('home.batikPrinting')}</h3>
-                <p>{t('home.batikPrintingDesc')}</p>
-                <span className="category-link">{t('home.viewCollection')} →</span>
-              </div>
+                <div className="home-category__body">
+                  <h3>{t(category.titleKey)}</h3>
+                  <p>{t(category.bodyKey)}</p>
+                  <span className="home-category__cue">
+                    {t('home.viewCollection')}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="home-story" aria-labelledby="home-story-title">
+        <div className="home-container home-story__inner">
+          <div>
+            <p className="home-kicker">{t('home.storyKicker')}</p>
+            <h2 id="home-story-title" className="home-story__heading">
+              {t('home.storyHeading')}
+            </h2>
+          </div>
+          <div className="home-story__copy">
+            <p>{t('home.storyBody')}</p>
+            <Link to="/about" className="home-text-link">
+              {t('home.storyCta')}
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Pattern Heritage */}
-      <section className="pattern-heritage">
-        <div className="container">
-          <div className="section-header">
-            <h2>{t('home.traditionalPatterns')}</h2>
-            <p>{t('home.patternsDescription')}</p>
-          </div>
-          <div className="pattern-grid">
-            <div className="pattern-item">
-              <div className="pattern-image">
-                <img src={parangImg} alt="Parang Pattern" />
-              </div>
-              <h4>{t('home.parang')}</h4>
-              <p>{t('home.parangDesc')}</p>
-            </div>
-            <div className="pattern-item">
-              <div className="pattern-image">
-                <img src={kawungImg} alt="Kawung Pattern" />
-              </div>
-              <h4>{t('home.kawung')}</h4>
-              <p>{t('home.kawungDesc')}</p>
-            </div>
-            <div className="pattern-item">
-              <div className="pattern-image">
-                <img src={megaMendungImg} alt="Mega Mendung Pattern" />
-              </div>
-              <h4>{t('home.megaMendung')}</h4>
-              <p>{t('home.megaMendungDesc')}</p>
-            </div>
-            <div className="pattern-item">
-              <div className="pattern-image">
-                <img src={sekarJagadImg} alt="Sekar Jagad Pattern" />
-              </div>
-              <h4>{t('home.sekarJagad')}</h4>
-              <p>{t('home.sekarJagadDesc')}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Products */}
-      <section className="section-products">
-        <div className="container">
-          <div className="section-header">
+      <section className="home-motifs" aria-labelledby="home-motifs-title">
+        <div className="home-container">
+          <header className="home-section-head">
             <div>
-              <h2>{t('home.featuredCollection')}</h2>
-              <p className="section-subtitle">{t('home.featuredSubtitle')}</p>
+              <p className="home-kicker">{t('home.motifKicker')}</p>
+              <h2 id="home-motifs-title">{t('home.motifHeading')}</h2>
             </div>
-            <Link to="/shop">
-              <Button variant="outline">{t('common.viewAll')}</Button>
-            </Link>
+            <p className="home-section-head__body">{t('home.motifBody')}</p>
+          </header>
+
+          <div className="home-motif-layout">
+            <figure className="home-motif-feature">
+              <div className="home-motif-feature__media">
+                <img
+                  src={parangImg}
+                  alt={t('home.categoryTulisAlt')}
+                  loading="lazy"
+                />
+              </div>
+              <figcaption>{t('home.parang')}</figcaption>
+            </figure>
+
+            <ul className="home-motif-list">
+              {motifs.map((motif) => (
+                <li key={motif.title} className="home-motif-item">
+                  <h3>{motif.title}</h3>
+                  <p>{motif.body}</p>
+                </li>
+              ))}
+            </ul>
           </div>
-          <ProductGrid
-            products={featuredProducts}
-            onAddToCart={handleAddToCart}
-            onQuickView={handleQuickView}
-          />
         </div>
       </section>
 
-      {/* Bestsellers */}
-      <section className="section-products section-bestsellers">
-        <div className="container">
-          <div className="section-header">
+      <section className="home-products" id="koleksi" aria-labelledby="home-products-title">
+        <div className="home-container">
+          <header className="home-section-head home-section-head--split">
             <div>
-              <h2>{t('home.bestsellers')}</h2>
-              <p className="section-subtitle">{t('home.bestsellersSubtitle')}</p>
+              <p className="home-kicker">{t('home.productsKicker')}</p>
+              <h2 id="home-products-title">{t('home.productsHeading')}</h2>
+              <p className="home-section-head__body">{t('home.productsBody')}</p>
             </div>
-            <Link to="/shop">
-              <Button variant="outline">{t('common.viewAll')}</Button>
+            <Link to="/shop" className="home-text-link">
+              {t('home.productsCta')}
             </Link>
-          </div>
-          <ProductGrid
-            products={bestsellerProducts}
-            onAddToCart={handleAddToCart}
-            onQuickView={handleQuickView}
-          />
+          </header>
+
+          {renderCollection(featuredProducts)}
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="testimonials-section">
-        <div className="container">
-          <div className="section-header">
-            <h2>{t('home.testimonials')}</h2>
-            <p>{t('home.testimonialsSubtitle')}</p>
-          </div>
-          <div className="testimonials-grid">
-            <div className="testimonial-card">
-              <div className="testimonial-stars">★★★★★</div>
-              <p className="testimonial-text">
-                {t('home.testimonial1')}
-              </p>
-              <div className="testimonial-author">
-                <strong>Sarah Wijaya</strong>
-                <span>Jakarta</span>
-              </div>
-            </div>
-            <div className="testimonial-card">
-              <div className="testimonial-stars">★★★★★</div>
-              <p className="testimonial-text">
-                {t('home.testimonial2')}
-              </p>
-              <div className="testimonial-author">
-                <strong>Michael Hartono</strong>
-                <span>Surabaya</span>
-              </div>
-            </div>
-            <div className="testimonial-card">
-              <div className="testimonial-stars">★★★★★</div>
-              <p className="testimonial-text">
-                {t('home.testimonial3')}
-              </p>
-              <div className="testimonial-author">
-                <strong>Dewi Kusuma</strong>
-                <span>Bandung</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* QuickView Modal */}
       {quickViewProduct && (
         <QuickView product={quickViewProduct} onClose={closeQuickView} />
       )}

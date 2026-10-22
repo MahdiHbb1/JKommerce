@@ -1,10 +1,20 @@
-import { createContext, useState, useContext, useEffect } from 'react';
-import { supabase, isSupabaseConfigured, SUPABASE_ORDERS_TABLE } from '../lib/supabaseClient';
+import {
+  createContext,
+  useCallback,
+  useState,
+  useContext,
+  useEffect,
+  useRef,
+} from 'react';
 import { useAuth } from './AuthContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
 const OrderContext = createContext();
 
 const LOCAL_STORAGE_KEY = 'jk-orders';
+
+const ORDER_SELECT =
+  'id, order_number, status, email, customer, address, subtotal_idr, shipping_idr, discount_idr, tax_idr, total_idr, tax_mode, payment_preference, courier, tracking_number, expires_at, paid_at, shipped_at, delivered_at, cancelled_at, created_at, order_items(name_snapshot, qty, unit_price_idr, variant_snapshot)';
 
 const safeParseOrders = (rawValue) => {
   if (!rawValue) {
@@ -19,22 +29,6 @@ const safeParseOrders = (rawValue) => {
   }
 };
 
-const normalizeOrder = (orderRecord) => {
-  const payload = orderRecord?.payload && typeof orderRecord.payload === 'object'
-    ? orderRecord.payload
-    : orderRecord;
-
-  const orderNumber = payload.orderNumber || orderRecord?.order_number || payload.id || orderRecord?.id;
-
-  return {
-    ...payload,
-    id: payload.id || orderRecord?.id || orderNumber,
-    orderNumber,
-    orderDate: payload.orderDate || orderRecord?.created_at || Date.now(),
-    status: payload.status || orderRecord?.status || 'processing'
-  };
-};
-
 const mergeOrders = (primaryOrders, secondaryOrders) => {
   const orderMap = new Map();
 
@@ -46,7 +40,7 @@ const mergeOrders = (primaryOrders, secondaryOrders) => {
 
     orderMap.set(key, {
       ...(orderMap.get(key) || {}),
-      ...order
+      ...order,
     });
   });
 
@@ -57,18 +51,61 @@ const mergeOrders = (primaryOrders, secondaryOrders) => {
   });
 };
 
-const toSupabaseRow = (orderData, userId = null) => ({
-  order_number: orderData.orderNumber,
-  email: orderData.shippingInfo?.email || '',
-  status: orderData.status || 'processing',
-  user_id: userId,
-  payload: {
-    ...orderData,
-    id: orderData.id || orderData.orderNumber,
-    orderNumber: orderData.orderNumber,
-    orderDate: orderData.orderDate || Date.now()
-  }
+/**
+ * Baris `orders` (select milik sendiri lewat RLS) ke bentuk tampilan.
+ * Hanya field yang memang dibutuhkan UI; payload/internal_note tidak dibaca.
+ */
+const mapOrderRow = (row) => ({
+  id: row.id,
+  isAccountOrder: true,
+  orderNumber: row.order_number,
+  status: row.status,
+  orderDate: row.created_at,
+  total: row.total_idr,
+  subtotal: row.subtotal_idr,
+  shipping: row.shipping_idr,
+  discount: row.discount_idr,
+  tax: row.tax_idr,
+  taxMode: row.tax_mode,
+  paymentMethod: row.payment_preference,
+  courier: row.courier,
+  trackingNumber: row.tracking_number,
+  expiresAt: row.expires_at,
+  paidAt: row.paid_at,
+  shippedAt: row.shipped_at,
+  deliveredAt: row.delivered_at,
+  cancelledAt: row.cancelled_at,
+  email: row.email,
+  customerName: row.customer?.name ?? null,
+  shippingInfo: {
+    fullName: row.address?.recipient ?? row.customer?.name ?? '',
+    phone: row.address?.phone ?? row.customer?.phone ?? '',
+    address: row.address?.full_address ?? '',
+    city: row.address?.city ?? '',
+    province: row.address?.province ?? '',
+    postalCode: row.address?.postal_code ?? '',
+    email: row.email,
+  },
+  items: (row.order_items ?? []).map((item) => ({
+    name: item.name_snapshot,
+    quantity: item.qty,
+    price: item.unit_price_idr,
+    selectedSize: item.variant_snapshot?.size ?? null,
+    selectedColor: item.variant_snapshot?.color ?? null,
+  })),
 });
+
+const cancelErrorMessage = (message) => {
+  const knownCodes = [
+    'order_not_found',
+    'invalid_status',
+    'rate_limited',
+  ];
+  const code = knownCodes.includes(message) ? message : 'cancel_failed';
+  const error = new Error(code);
+  error.code = code;
+  return error;
+};
 
 export const useOrders = () => {
   const context = useContext(OrderContext);
@@ -79,7 +116,7 @@ export const useOrders = () => {
 };
 
 export const OrderProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState(() => {
     const savedOrders = safeParseOrders(localStorage.getItem(LOCAL_STORAGE_KEY));
     if (Array.isArray(savedOrders)) {
@@ -87,70 +124,178 @@ export const OrderProvider = ({ children }) => {
     }
     return [];
   });
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState(null);
+  const requestIdRef = useRef(0);
 
-  // Save orders to localStorage whenever they change.
+  // Pesanan akun tidak ikut ditulis ke cache perangkat supaya tidak
+  // tertinggal setelah pengguna keluar dari akun di perangkat bersama.
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(orders));
+    const deviceOrders = orders.filter((order) => !order.isAccountOrder);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(deviceOrders));
   }, [orders]);
 
-  // Add new order
-  const addOrder = async (orderData) => {
-    const newOrder = {
-      ...orderData,
-      id: orderData.orderNumber || `JK${Date.now().toString().slice(-8)}`,
+  const refreshOrders = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+
+    if (!user?.id || !isSupabaseConfigured || !supabase) {
+      setOrders((previousOrders) =>
+        previousOrders.filter((order) => !order.isAccountOrder),
+      );
+      setOrdersLoading(false);
+      setOrdersError(null);
+      return;
+    }
+
+    setOrdersLoading(true);
+    setOrdersError(null);
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select(ORDER_SELECT)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (requestId !== requestIdRef.current) {
+      return;
+    }
+
+    if (error) {
+      console.error('Gagal memuat riwayat pesanan:', error);
+      setOrdersError('load_failed');
+      setOrdersLoading(false);
+      return;
+    }
+
+    setOrders((previousOrders) =>
+      mergeOrders((data ?? []).map(mapOrderRow), previousOrders),
+    );
+    setOrdersLoading(false);
+  }, [user?.id]);
+
+  useEffect(() => {
+    refreshOrders();
+  }, [refreshOrders]);
+
+  /**
+   * Membuat pesanan lewat Edge Function create-order (server yang memvalidasi
+   * harga, stok, dan total). Tidak pernah menulis langsung ke tabel orders.
+   */
+  const createOrder = async (orderInput) => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !anonKey) {
+      const configError = new Error('supabase_not_configured');
+      configError.code = 'supabase_not_configured';
+      throw configError;
+    }
+
+    let response;
+    try {
+      response = await fetch(`${supabaseUrl}/functions/v1/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify(orderInput),
+      });
+    } catch {
+      const error = new Error('network_error');
+      error.code = 'network_error';
+      throw error;
+    }
+
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      // Respons non-JSON ditangani sebagai kegagalan generik di bawah.
+      data = null;
+    }
+
+    if (!response.ok) {
+      const error = new Error(data?.error || 'create_order_failed');
+      error.code = data?.error || 'create_order_failed';
+      error.status = response.status;
+      error.details = data?.errors;
+      throw error;
+    }
+
+    if (!data?.order_number) {
+      const error = new Error('invalid_response');
+      error.code = 'invalid_response';
+      throw error;
+    }
+
+    const cachedOrder = {
+      id: data.order_number,
+      isAccountOrder: Boolean(user?.id),
+      orderNumber: data.order_number,
+      status: data.status || 'pending_payment',
+      totals: data.totals || null,
+      taxMode: data.totals?.tax_mode ?? null,
+      paymentMethod: orderInput?.payment_preference || 'manual',
+      expiresAt: data.expires_at || null,
+      email: orderInput?.customer?.email || '',
+      customerName: orderInput?.customer?.name || '',
       orderDate: Date.now(),
-      status: 'processing'
     };
 
-    setOrders((prevOrders) => mergeOrders([newOrder], prevOrders));
+    setOrders((prevOrders) => mergeOrders([cachedOrder], prevOrders));
 
-    if (!isSupabaseConfigured || !supabase) {
-      return newOrder;
-    }
-
-    try {
-      // For guest orders (user_id is null), skip read-back to avoid RLS policy failure.
-      // The SELECT policy requires auth.uid() = user_id, but NULL = NULL is not true in SQL.
-      // Local state already has the correct order data. Guest orders can be retrieved via
-      // the secure Edge Function lookup-order when needed.
-      if (!user) {
-        await supabase
-          .from(SUPABASE_ORDERS_TABLE)
-          .upsert(toSupabaseRow(newOrder, null), { onConflict: 'order_number' });
-      } else {
-        // For authenticated users, read-back is safe and useful for consistency
-        const { data, error } = await supabase
-          .from(SUPABASE_ORDERS_TABLE)
-          .upsert(toSupabaseRow(newOrder, user.id), { onConflict: 'order_number' })
-          .select('*')
-          .single();
-
-        if (error) {
-          throw error;
-        }
-
-        if (data) {
-          const remoteOrder = normalizeOrder(data);
-          setOrders((prevOrders) => mergeOrders([remoteOrder], prevOrders));
-        }
-      }
-    } catch (error) {
-      console.error('Error saving order to Supabase:', error);
-    }
-
-    return newOrder;
+    return data;
   };
 
-  // Get order by ID
+  /**
+   * Pembatalan memakai RPC security-definer; stok dilepas di server.
+   * Nomor + email dicocokkan server, bukan dipercaya dari tampilan.
+   */
+  const cancelOrder = async (orderNumber, email) => {
+    if (!isSupabaseConfigured || !supabase) {
+      const error = new Error('supabase_not_configured');
+      error.code = 'supabase_not_configured';
+      throw error;
+    }
+
+    const { data, error } = await supabase.rpc('cancel_order_by_customer', {
+      p_order_number: orderNumber,
+      p_email: email,
+    });
+
+    if (error) {
+      throw cancelErrorMessage(error.message?.trim() ?? '');
+    }
+
+    const nextStatus = data?.status || 'cancelled';
+    setOrders((previousOrders) =>
+      previousOrders.map((order) =>
+        order.orderNumber === orderNumber || order.id === orderNumber
+          ? { ...order, status: nextStatus }
+          : order,
+      ),
+    );
+
+    return data;
+  };
+
   const getOrderById = (orderId) => {
-    return orders.find(order => order.id === orderId || order.orderNumber === orderId);
+    return orders.find(
+      (order) => order.id === orderId || order.orderNumber === orderId,
+    );
   };
 
   const value = {
     orders,
-    addOrder,
+    ordersLoading: ordersLoading || authLoading,
+    ordersError,
+    refreshOrders,
+    createOrder,
+    cancelOrder,
     getOrderById,
-    orderCount: orders.length
+    orderCount: orders.length,
   };
 
   return (

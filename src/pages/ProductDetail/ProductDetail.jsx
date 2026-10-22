@@ -1,195 +1,181 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useToast } from '../../context/ToastContext';
 import { useRecentlyViewed } from '../../context/RecentlyViewedContext';
-import { getProductById, getRelatedProducts, formatPrice } from '../../data/products';
 import { useTranslation } from '../../hooks/useTranslation';
 import Button from '../../components/Button/Button';
 import ProductGrid from '../../components/ProductGrid/ProductGrid';
 import { ProductDetailSkeleton } from '../../components/Skeleton/Skeleton';
 import PageMeta from '../../components/Seo/PageMeta';
+import { fetchProductBySlug, fetchProducts } from '../../lib/db/catalog';
+import { toCardProduct } from '../../lib/db/presenters';
 import './ProductDetail.css';
 
+const uniqueValues = (values) => [...new Set(values.filter(Boolean))];
+
 const ProductDetail = () => {
-  const { id } = useParams();
+  const { id: slug } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { success, error } = useToast();
   const { addToRecentlyViewed, getRecentlyViewed } = useRecentlyViewed();
   const { t, formatCurrency } = useTranslation();
-  
+
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [relatedProducts, setRelatedProducts] = useState([]);
-  const [recentlyViewed, setRecentlyViewed] = useState([]);
-  const [reviewForm, setReviewForm] = useState({
-    name: '',
-    rating: 5,
-    comment: ''
-  });
-  const [reviews, setReviews] = useState(() => {
-    // Load reviews from localStorage for this specific product
-    const savedReviews = localStorage.getItem(`jk-reviews-${id}`);
-    if (savedReviews) {
-      try {
-        return JSON.parse(savedReviews);
-      } catch (error) {
-        console.error('Error loading reviews:', error);
-      }
-    }
-    // Default sample reviews if none saved
-    return [
-      {
-        id: 1,
-        name: 'Sarah Wijaya',
-        rating: 5,
-        comment: 'Absolutely beautiful batik! The craftsmanship is exceptional and the colors are vibrant. Worth every rupiah.',
-        date: '2025-12-15'
-      },
-      {
-        id: 2,
-        name: 'Ahmad Kusuma',
-        rating: 5,
-        comment: 'Bought this as a gift and my mother loved it. The traditional patterns are authentic and the quality is outstanding.',
-        date: '2025-12-10'
-      },
-      {
-        id: 3,
-        name: 'Rina Pratiwi',
-        rating: 4,
-        comment: 'Beautiful piece! Shipping was fast and packaging was excellent. Minor color variation from photo but still gorgeous.',
-        date: '2025-12-05'
-      }
-    ];
+
+  // Context ini mengubah identitas fungsinya saat state berubah; simpan di ref
+  // supaya efek pemuatan produk tidak ikut berjalan ulang.
+  const addToRecentlyViewedRef = useRef(addToRecentlyViewed);
+  const getRecentlyViewedRef = useRef(getRecentlyViewed);
+  useEffect(() => {
+    addToRecentlyViewedRef.current = addToRecentlyViewed;
+    getRecentlyViewedRef.current = getRecentlyViewed;
   });
 
-  useEffect(() => {
+  const loadProduct = useCallback(async () => {
     setIsLoading(true);
-    const foundProduct = getProductById(parseInt(id));
-    if (foundProduct) {
-      setProduct(foundProduct);
-      setSelectedSize(foundProduct.sizes?.[0] || '');
-      setSelectedColor(foundProduct.colors?.[0] || '');
-      setRelatedProducts(getRelatedProducts(foundProduct.id));
+    setLoadError(null);
+    setRelatedProducts([]);
 
-      // Track recently viewed
-      addToRecentlyViewed(foundProduct);
+    try {
+      const found = await fetchProductBySlug(slug);
+      if (!found) {
+        navigate('/shop', { replace: true });
+        return;
+      }
 
-      // Get recently viewed excluding current product
-      const recentItems = getRecentlyViewed(5).filter(item => item.id !== foundProduct.id);
-      setRecentlyViewed(recentItems);
+      const sizes = uniqueValues(found.variants.map((variant) => variant.size));
+      const colors = uniqueValues(found.variants.map((variant) => variant.color));
 
-      window.scrollTo(0, 0);
-      setTimeout(() => setIsLoading(false), 500);
-    } else {
-      navigate('/shop');
+      setProduct(found);
+      setSelectedSize(sizes[0] ?? '');
+      setSelectedColor(colors[0] ?? '');
+      setSelectedImage(0);
+      setQuantity(1);
+
+      // Simpan bentuk kartu (id = slug) supaya konsisten dengan Shop/Home.
+      addToRecentlyViewedRef.current(toCardProduct(found));
+
+      try {
+        const all = await fetchProducts();
+        const related = all
+          .filter((item) => item.slug !== found.slug)
+          .sort(
+            (a, b) =>
+              Number(b.category === found.category) -
+              Number(a.category === found.category),
+          )
+          .slice(0, 4)
+          .map(toCardProduct);
+        setRelatedProducts(related);
+      } catch (relatedError) {
+        console.error('Gagal memuat produk serupa:', relatedError);
+      }
+    } catch (loadFailure) {
+      console.error('Gagal memuat produk:', loadFailure);
+      setLoadError(loadFailure);
+    } finally {
+      setIsLoading(false);
     }
-  }, [id, navigate]);
+  }, [slug, navigate]);
 
-  // Save reviews to localStorage whenever they change
   useEffect(() => {
-    if (id) {
-      localStorage.setItem(`jk-reviews-${id}`, JSON.stringify(reviews));
+    loadProduct();
+  }, [loadProduct]);
+
+  const sizes = useMemo(
+    () => uniqueValues((product?.variants ?? []).map((variant) => variant.size)),
+    [product],
+  );
+  const colors = useMemo(
+    () => uniqueValues((product?.variants ?? []).map((variant) => variant.color)),
+    [product],
+  );
+
+  const selectedVariant = useMemo(() => {
+    if (!product) {
+      return null;
     }
-  }, [reviews, id]);
-
-  if (isLoading) {
     return (
-      <div className="product-detail-page">
-        <PageMeta
-          title="Product details"
-          description="View handcrafted batik product details, sizes, colors, reviews, and related items."
-        />
-        <div className="container">
-          <ProductDetailSkeleton />
-        </div>
-      </div>
+      product.variants.find(
+        (variant) =>
+          variant.is_active !== false &&
+          variant.size === selectedSize &&
+          variant.color === selectedColor,
+      ) ?? null
     );
-  }
+  }, [product, selectedSize, selectedColor]);
 
-  if (!product) {
-    return null;
-  }
+  const stockAvailable = selectedVariant?.stock_available ?? 0;
+  const isAvailable = stockAvailable > 0;
+
+  // Jaga jumlah tetap dalam batas stok varian terpilih.
+  useEffect(() => {
+    setQuantity((current) => Math.min(current, Math.max(1, stockAvailable)));
+  }, [stockAvailable]);
+
+  const cardProduct = useMemo(
+    () => (product ? toCardProduct(product) : null),
+    [product],
+  );
+
+  const recentItems = getRecentlyViewedRef
+    .current(6)
+    .filter((item) => item.slug !== product?.slug);
 
   const handleAddToCart = () => {
-    if (product.stock === 0) {
+    if (!selectedVariant || !isAvailable) {
       error(t('product.outOfStockMessage'));
       return;
     }
-    addToCart(product, quantity, selectedSize, selectedColor);
+    addToCart(product, quantity, selectedSize, selectedColor, selectedVariant);
     success(t('cart.addedToCart', { quantity, name: product.name }));
   };
 
   const handleQuantityChange = (change) => {
-    const newQuantity = quantity + change;
-    if (newQuantity >= 1 && newQuantity <= product.stock) {
-      setQuantity(newQuantity);
+    const nextQuantity = quantity + change;
+    if (nextQuantity >= 1 && nextQuantity <= stockAvailable) {
+      setQuantity(nextQuantity);
     }
   };
 
   const handleRelatedProductClick = (relatedProduct) => {
-    navigate(`/product/${relatedProduct.id}`);
+    navigate(`/product/${relatedProduct.slug || relatedProduct.id}`);
+  };
+
+  const handleAddRelatedToCart = (relatedProduct) => {
+    addToCart(
+      relatedProduct,
+      1,
+      relatedProduct.sizes?.[0] ?? null,
+      relatedProduct.colors?.[0] ?? null,
+    );
+    success(t('cart.addedToCart', { quantity: 1, name: relatedProduct.name }));
   };
 
   const handleWishlistToggle = () => {
-    toggleWishlist(product);
-    if (isInWishlist(product.id)) {
+    toggleWishlist(cardProduct);
+    if (isInWishlist(cardProduct.id)) {
       success(t('wishlist.removedFromWishlist'));
     } else {
       success(t('wishlist.addedToWishlist'));
     }
   };
 
-  const inWishlist = isInWishlist(product.id);
-
-  const handleReviewSubmit = (e) => {
-    e.preventDefault();
-    if (reviewForm.name.trim() && reviewForm.comment.trim()) {
-      const newReview = {
-        id: reviews.length + 1,
-        name: reviewForm.name,
-        rating: reviewForm.rating,
-        comment: reviewForm.comment,
-        date: new Date().toISOString().split('T')[0]
-      };
-      setReviews([newReview, ...reviews]);
-      setReviewForm({ name: '', rating: 5, comment: '' });
-      success(t('product.reviewSubmitted'));
-    }
-  };
-
-  const calculateAverageRating = () => {
-    if (reviews.length === 0) return 0;
-    const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
-    return (sum / reviews.length).toFixed(1);
-  };
-
-  const renderStars = (rating) => {
-    return Array.from({ length: 5 }, (_, index) => (
-      <svg
-        key={index}
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill={index < rating ? '#f39c12' : '#ddd'}
-        className="star-icon"
-      >
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-      </svg>
-    ));
-  };
-
   const handleShare = (platform) => {
     const url = window.location.href;
-    const text = `Check out ${product.name} - Premium Batik from Janoer Koening`;
-    
+    const text = t('product.shareText', { name: product.name });
+
     switch (platform) {
       case 'facebook':
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
@@ -202,12 +188,44 @@ const ProductDetail = () => {
         break;
       case 'copy':
         navigator.clipboard.writeText(url);
-        alert('Link copied to clipboard!');
+        success(t('notifications.copied'));
         break;
       default:
         break;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="product-detail-page">
+        <PageMeta title={t('product.details')} />
+        <div className="container">
+          <ProductDetailSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="product-detail-page">
+        <PageMeta title={t('product.details')} />
+        <div className="container">
+          <div className="detail-state" role="alert">
+            <h1>{t('product.loadError')}</h1>
+            <p>{t('product.loadErrorHint')}</p>
+            <Button variant="primary" size="large" onClick={loadProduct}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return null;
+  }
 
   return (
     <div className="product-detail-page">
@@ -230,21 +248,33 @@ const ProductDetail = () => {
           {/* Image Gallery */}
           <div className="product-gallery">
             <div className="main-image">
-              <img src={product.images[selectedImage]} alt={product.name} />
-              {product.featured && <span className="badge badge-featured">Featured</span>}
-              {product.bestseller && <span className="badge badge-bestseller">Bestseller</span>}
-            </div>
-            <div className="image-thumbnails">
-              {product.images.map((image, index) => (
-                <button
-                  key={index}
-                  className={`thumbnail ${selectedImage === index ? 'active' : ''}`}
-                  onClick={() => setSelectedImage(index)}
+              {product.images.length > 0 ? (
+                <img src={product.images[selectedImage]} alt={product.name} />
+              ) : (
+                <div
+                  className="main-image-placeholder"
+                  role="img"
+                  aria-label={product.name}
                 >
-                  <img src={image} alt={`${product.name} ${index + 1}`} />
-                </button>
-              ))}
+                  {t('product.noImage')}
+                </div>
+              )}
+              {product.is_featured && <span className="badge badge-featured">{t('product.featured')}</span>}
+              {product.is_bestseller && <span className="badge badge-bestseller">{t('product.bestSeller')}</span>}
             </div>
+            {product.images.length > 1 && (
+              <div className="image-thumbnails">
+                {product.images.map((image, index) => (
+                  <button
+                    key={image}
+                    className={`thumbnail ${selectedImage === index ? 'active' : ''}`}
+                    onClick={() => setSelectedImage(index)}
+                  >
+                    <img src={image} alt={`${product.name} ${index + 1}`} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Info */}
@@ -255,20 +285,22 @@ const ProductDetail = () => {
             </div>
 
             <div className="product-price">
-              <span className="price-value">{formatCurrency(product.price)}</span>
-              <span className="price-note">{t('product.freeShipping')}</span>
+              <span className="price-value">{formatCurrency(product.price_idr)}</span>
+              <span className="price-note">{t('product.shippingNote')}</span>
             </div>
 
-            <div className="product-description">
-              <p>{product.description}</p>
-            </div>
+            {product.description && (
+              <div className="product-description">
+                <p>{product.description}</p>
+              </div>
+            )}
 
             {/* Size Selector */}
-            {product.sizes && product.sizes.length > 0 && (
+            {sizes.length > 0 && (
               <div className="product-option">
                 <label className="option-label">{t('product.size')}: <strong>{selectedSize}</strong></label>
                 <div className="option-buttons">
-                  {product.sizes.map((size) => (
+                  {sizes.map((size) => (
                     <button
                       key={size}
                       className={`option-btn ${selectedSize === size ? 'active' : ''}`}
@@ -282,11 +314,11 @@ const ProductDetail = () => {
             )}
 
             {/* Color Selector */}
-            {product.colors && product.colors.length > 0 && (
+            {colors.length > 0 && (
               <div className="product-option">
                 <label className="option-label">{t('product.color')}: <strong>{selectedColor}</strong></label>
                 <div className="option-buttons">
-                  {product.colors.map((color) => (
+                  {colors.map((color) => (
                     <button
                       key={color}
                       className={`option-btn ${selectedColor === color ? 'active' : ''}`}
@@ -305,7 +337,7 @@ const ProductDetail = () => {
               <div className="quantity-selector">
                 <button 
                   onClick={() => handleQuantityChange(-1)}
-                  disabled={quantity <= 1}
+                  disabled={!isAvailable || quantity <= 1}
                   className="quantity-btn"
                 >
                   -
@@ -313,12 +345,16 @@ const ProductDetail = () => {
                 <span className="quantity-value">{quantity}</span>
                 <button 
                   onClick={() => handleQuantityChange(1)}
-                  disabled={quantity >= product.stock}
+                  disabled={!isAvailable || quantity >= stockAvailable}
                   className="quantity-btn"
                 >
                   +
                 </button>
-                <span className="stock-info">{t('product.stockAvailable', { stock: product.stock })}</span>
+                <span className={`stock-info ${isAvailable ? '' : 'stock-info-empty'}`}>
+                  {isAvailable
+                    ? t('product.stockAvailable', { stock: stockAvailable })
+                    : t('product.outOfStockMessage')}
+                </span>
               </div>
             </div>
 
@@ -329,37 +365,44 @@ const ProductDetail = () => {
                 size="large" 
                 fullWidth 
                 onClick={handleAddToCart}
-                disabled={product.stock === 0}
+                disabled={!isAvailable}
               >
-                {product.stock === 0 ? t('product.outOfStock') : t('product.addToCart')}
+                {isAvailable ? t('product.addToCart') : t('product.outOfStock')}
               </Button>
               
               <button 
-                className={`wishlist-action-btn ${inWishlist ? 'in-wishlist' : ''}`}
+                type="button"
+                className={`wishlist-action-btn ${isInWishlist(cardProduct.id) ? 'in-wishlist' : ''}`}
                 onClick={handleWishlistToggle}
-                title={inWishlist ? t('wishlist.removeFromWishlist') : t('wishlist.addToWishlist')}
+                aria-pressed={isInWishlist(cardProduct.id)}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill={inWishlist ? 'currentColor' : 'none'}>
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" stroke={inWishlist ? 'none' : 'currentColor'} strokeWidth="2"/>
+                <svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24" fill={isInWishlist(cardProduct.id) ? 'currentColor' : 'none'}>
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" stroke={isInWishlist(cardProduct.id) ? 'none' : 'currentColor'} strokeWidth="2"/>
                 </svg>
-                <span>{inWishlist ? t('wishlist.saved') : t('wishlist.save')}</span>
+                <span>{isInWishlist(cardProduct.id) ? t('wishlist.saved') : t('wishlist.save')}</span>
               </button>
             </div>
 
             {/* Product Details */}
             <div className="product-details">
-              <div className="detail-item">
-                <h3>{t('product.heritageAndMeaning')}</h3>
-                <p>{product.heritage}</p>
-              </div>
-              <div className="detail-item">
-                <h3>{t('product.craftsmanshipDetails')}</h3>
-                <p>{product.details}</p>
-              </div>
-              <div className="detail-item">
-                <h3>{t('product.pattern')}</h3>
-                <p>{product.pattern}</p>
-              </div>
+              {product.heritage && (
+                <div className="detail-item">
+                  <h3>{t('product.heritageAndMeaning')}</h3>
+                  <p>{product.heritage}</p>
+                </div>
+              )}
+              {product.details && (
+                <div className="detail-item">
+                  <h3>{t('product.craftsmanshipDetails')}</h3>
+                  <p>{product.details}</p>
+                </div>
+              )}
+              {product.pattern && (
+                <div className="detail-item">
+                  <h3>{t('product.pattern')}</h3>
+                  <p>{product.pattern}</p>
+                </div>
+              )}
             </div>
 
             {/* Social Share */}
@@ -392,94 +435,12 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Reviews Section */}
+        {/* Reviews - skema ulasan menyusul; belum ada data, jadi jangan tampilkan apa pun selain pesan netral */}
         <div className="reviews-section">
           <div className="reviews-header">
             <h2>{t('product.customerReviews')}</h2>
-            <div className="rating-summary">
-              <div className="average-rating">
-                <span className="rating-number">{calculateAverageRating()}</span>
-                <div className="stars">{renderStars(Math.round(calculateAverageRating()))}</div>
-                <span className="review-count">{t('product.basedOnReviews', { count: reviews.length })}</span>
-              </div>
-            </div>
           </div>
-
-          <div className="reviews-content">
-            <div className="reviews-list">
-              <h3>{t('product.whatCustomersSay')}</h3>
-              {reviews.map((review) => (
-                <div key={review.id} className="review-item">
-                  <div className="review-header">
-                    <div className="reviewer-info">
-                      <strong>{review.name}</strong>
-                      <span className="review-date">{new Date(review.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
-                    <div className="review-rating">{renderStars(review.rating)}</div>
-                  </div>
-                  <p className="review-comment">{review.comment}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="review-form-container">
-              <h3>{t('product.writeReview')}</h3>
-              <form onSubmit={handleReviewSubmit} className="review-form">
-                <div className="form-group">
-                  <label htmlFor="review-name">{t('product.yourName')}</label>
-                  <input
-                    type="text"
-                    id="review-name"
-                    name="name"
-                    value={reviewForm.name}
-                    onChange={(e) => setReviewForm({ ...reviewForm, name: e.target.value })}
-                    placeholder={t('product.enterYourName')}
-                    autoComplete="name"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="review-rating">{t('product.rating')}</label>
-                  <div className="rating-input" role="radiogroup" aria-labelledby="review-rating">
-                    {[5, 4, 3, 2, 1].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        role="radio"
-                        aria-checked={reviewForm.rating === star}
-                        aria-label={`${star} stars`}
-                        className={`star-btn ${reviewForm.rating >= star ? 'active' : ''}`}
-                        onClick={() => setReviewForm({ ...reviewForm, rating: star })}
-                      >
-                        <svg width="30" height="30" viewBox="0 0 24 24" fill={reviewForm.rating >= star ? '#f39c12' : '#ddd'}>
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="review-comment">{t('product.yourReview')}</label>
-                  <textarea
-                    id="review-comment"
-                    name="comment"
-                    value={reviewForm.comment}
-                    onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
-                    placeholder={t('product.shareExperience')}
-                    rows="4"
-                    autoComplete="off"
-                    required
-                  />
-                </div>
-
-                <button type="submit" className="submit-review-btn">
-                  {t('product.submitReview')}
-                </button>
-              </form>
-            </div>
-          </div>
+          <p className="no-reviews">{t('product.noReviews')}</p>
         </div>
 
         {/* Related Products */}
@@ -488,26 +449,20 @@ const ProductDetail = () => {
             <h2>{t('product.youMayAlsoLike')}</h2>
             <ProductGrid
               products={relatedProducts}
-              onAddToCart={(p) => {
-                addToCart(p, 1);
-                success(t('cart.addedToCart', { quantity: 1, name: p.name }));
-              }}
+              onAddToCart={handleAddRelatedToCart}
               onQuickView={handleRelatedProductClick}
             />
           </div>
         )}
 
         {/* Recently Viewed Products */}
-        {recentlyViewed.length > 0 && (
+        {recentItems.length > 0 && (
           <div className="related-products">
             <h2>{t('product.recentlyViewed')}</h2>
             <ProductGrid
-              products={recentlyViewed}
-              onAddToCart={(p) => {
-                addToCart(p, 1);
-                success(t('cart.addedToCart', { quantity: 1, name: p.name }));
-              }}
-              onQuickView={(p) => navigate(`/product/${p.id}`)}
+              products={recentItems}
+              onAddToCart={handleAddRelatedToCart}
+              onQuickView={handleRelatedProductClick}
             />
           </div>
         )}

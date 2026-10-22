@@ -12,13 +12,13 @@ export const useLanguage = () => {
 
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
-    // Load from localStorage or default to English
+    // Load from localStorage or default to Indonesian
     try {
       const savedLang = localStorage.getItem('janoerkoening_language');
-      return savedLang || 'en';
+      return savedLang || 'id';
     } catch (error) {
       console.error('Error loading language from localStorage:', error);
-      return 'en';
+      return 'id';
     }
   });
 
